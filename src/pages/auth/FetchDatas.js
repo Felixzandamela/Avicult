@@ -1,5 +1,5 @@
 import React,{useState, useEffect,useRef} from "react";
-import {useAuth,dbPackages,dbGateways,dbDeposits,dbWithdrawals, dbCommissions, dbUsers, dbChats} from './FirebaseConfig';
+import {useAuth,dbPackages,dbGateways,dbDeposits,dbWithdrawals, dbCommissions, dbUsers, dbChats,dbImages} from './FirebaseConfig';
 import {getCurrentTime,getYearlyChartdatas,formatDate,ThisWeek,Percentage, sortByDays, getColor} from "../Utils";
 
 class CardBalance{
@@ -391,4 +391,27 @@ export const FleetsDatas = () => {
     };
   },[]);
   return datas;
+}
+
+export const currentUser = async (e) => {
+  try {
+    let user;
+    const snapUser = await dbUsers.child(e.id).once('value');
+    if (snapUser.exists()) {
+      let userData = snapUser.val();
+      if (e.avatar) {
+        const snapImg = await dbImages.child(e.id).once("value");
+        if (snapImg.exists()) {
+          userData.avatar = snapImg.val().src;
+        }
+      }
+      user = userData;
+      return user;
+    } else {
+      throw new Error('User does not exist');
+    }
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
 }
