@@ -57,3 +57,26 @@ export function updatePassword(password){
 export function signOut(){
   return auth.signOut();
 }
+
+export const currentUser = async (e) => {
+  try {
+    let user;
+    const snapUser = await dbUsers.child(e.id).once('value');
+    if (snapUser.exists()) {
+      let userData = snapUser.val();
+      if (e.avatar) {
+        const snapImg = await dbImages.child(e.id).once("value");
+        if (snapImg.exists()) {
+          userData.avatar = snapImg.val().src;
+        }
+      }
+      user = userData;
+      return user;
+    } else {
+      throw new Error('User does not exist');
+    }
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}
