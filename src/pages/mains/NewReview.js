@@ -6,7 +6,6 @@ import {chackeVal,Avatar,getCurrentTime, MinLoder} from "../Utils";
 
 const getINegativeWords = (text)=>{
   const negativeWords  = ['ladrões','burla','burlado','burlando','burlada','burl@r','burl@r', 'burlar', 'burlão', 'burlista', 'burlador', 'burlável', 'burlas', 'burlões', 'burlistas', 'burladores', 'burláveis'];
-
   const arryOfNegativeWords = new RegExp("(" + negativeWords.join("|") + ")", "ig");
   return text.match(arryOfNegativeWords);
 }
