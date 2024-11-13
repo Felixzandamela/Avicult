@@ -57,24 +57,3 @@ export function updatePassword(password){
 export function signOut(){
   return auth.signOut();
 }
-
-
-export const currentUser =()=>{
-  const current = useAuth();
-  const [userDatas, setUserDatas] = useState({});
-  const hendleUser = (snapChat)=>{
-    const user = snapChat.val();
-    setUserDatas(user);
-  }
-  useEffect(()=>{
-    if(current){
-     dbUsers.child(current.uid).on('value', hendleUser);
-    }
-    return()=>{
-      if(current){
-        dbUsers.child(current.uid).off('value', hendleUser)
-      }
-    }
-  },[current]);
-  return userDatas;
-}
