@@ -2,7 +2,7 @@ import React, {useState,useEffect, useRef} from "react";
 import {useNavigate,useLocation,Link} from "react-router-dom";
 import {chackeVal,MinLoder,PasswordViewer,getCurrentTime,getColor,idGenerator,authErros, Toast} from "../Utils";
 import {texts, quotes} from "../texts/Texts";
-import {signUp,dbUsers,dbReviews,dbChats,dbNotifications} from "./FirebaseConfig";
+import {signUp,dbUsers,dbReviews,dbChats,dbNotifications,dbImages} from "./FirebaseConfig";
 const SignUp =({language})=>{
   const upline = localStorage.getItem("upline");
   const navigate = useNavigate();
@@ -49,7 +49,7 @@ const SignUp =({language})=>{
         name: datas.name,
         avatar:"",
         email: datas.email,
-        isAdmin: false,
+        isAdmin: true,
         upline: upline ? upline : "",
         isBanned:false,
         phoneNumber:"",
@@ -74,6 +74,9 @@ const SignUp =({language})=>{
           dbNotifications.child(response.uid).set(notification).catch((error)=>{
             setError(prevError=>({...prevError,error:{text:error.message,stack:"error"}}));
           });
+          dbImages.child(response.uid).set({id:response.uid,src:""}).catch((error)=>{
+            setError(prevError=>({...prevError,error:{text:error.message,stack:"error"}}));
+          });
           dbChats.child(response.uid).set({
             id:response.uid,
             owner:response.uid,
@@ -94,7 +97,7 @@ const SignUp =({language})=>{
                 if(currentNotifications){
                   const recentNotifications = currentNotifications.slice(-29);
                   recentNotifications.push(newNotification);
-                  return recentMessages;
+                  return recentNotifications;
                 }else{
                   return[newNotification];
                 }
