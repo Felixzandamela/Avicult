@@ -1,9 +1,8 @@
 import React,{useState,useEffect,useRef} from "react";
 import {useNavigate,Link} from 'react-router-dom';
 import {texts} from "../texts/Texts";
-import {dbReviews} from '../auth/FirebaseConfig';
+import {dbReviews,currentUser} from '../auth/FirebaseConfig';
 import {chackeVal,Avatar,getCurrentTime, MinLoder} from "../Utils";
-import {currentUser} from "../auth/FetchDatas";
 
 const getINegativeWords = (text)=>{
   const negativeWords  = ['ladrões','burla','burlado','burlando','burlada','burl@r','burl@r', 'burlar', 'burlão', 'burlista', 'burlador', 'burlável', 'burlas', 'burlões', 'burlistas', 'burladores', 'burláveis'];
