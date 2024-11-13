@@ -17,17 +17,11 @@ export const ImageCropper =({language, mode, loading, handleSaveAvatar,setFileNa
     setError(texts.imageNotsupported[lang]);
     return;
     }
-    reader.onload=()=>{
-      setFileName(reader.result);
-    };
+    reader.onload=()=>{setFileName(reader.result);};
     reader.readAsDataURL(file);
  };
   
-  useEffect(()=>{
-    return()=>{
-      clearFileName();
-    }
-  },[]);
+  useEffect(()=>{return()=>{clearFileName();}},[]);
 
   useEffect(() => {
     const initCropper = () => {
@@ -49,9 +43,7 @@ export const ImageCropper =({language, mode, loading, handleSaveAvatar,setFileNa
       image.current.onload = initCropper;
       image.current.setAttribute('src', fileName);
     }
-    return () => {
-      if (cropper) {cropper.destroy();}
-    };
+    return () => {if(cropper){cropper.destroy();}};
   }, [fileName]);
   
   const handlePreviewClick = () => {
