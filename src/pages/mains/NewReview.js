@@ -1,8 +1,9 @@
 import React,{useState,useEffect,useRef} from "react";
 import {useNavigate,Link} from 'react-router-dom';
 import {texts} from "../texts/Texts";
-import {useAuth,dbReviews,dbUsers} from '../auth/FirebaseConfig';
+import {dbReviews} from '../auth/FirebaseConfig';
 import {chackeVal,Avatar,getCurrentTime, MinLoder} from "../Utils";
+import {currentUser} from "../auth/FetchDatas";
 
 const getINegativeWords = (text)=>{
   const negativeWords  = ['ladrões','burla','burlado','burlando','burlada','burl@r','burl@r', 'burlar', 'burlão', 'burlista', 'burlador', 'burlável', 'burlas', 'burlões', 'burlistas', 'burladores', 'burláveis'];
@@ -12,8 +13,8 @@ const getINegativeWords = (text)=>{
 }
 
 const MAX_STARS = 5;
+const isAuthenticated = localStorage.getItem("isAuthenticated");
 const NewReview = ({language}) =>{
-  const current = useAuth();
   const color = localStorage.getItem('avatarColor');
   const navigate = useNavigate();
   const isMounted = useRef(true); 
@@ -28,7 +29,6 @@ const NewReview = ({language}) =>{
     text:"" //.replace(/\n/g, "\\n")
   });
   
-  
   const [error,setError]=useState({stars:false,text:null});
   const fullStars = Math.floor(datas.stars);
   const emptyStars = MAX_STARS - fullStars;
@@ -40,8 +40,8 @@ const NewReview = ({language}) =>{
  };
  
  useEffect(()=>{
-    if(current){
-      dbReviews.child(current.uid).on('value', (snapChat)=>{
+    if(isAuthenticated){
+      dbReviews.child(isAuthenticated).on('value', (snapChat)=>{
         let review = snapChat.val();
         setDatas(prevData=>({...prevData,
           owner:review.owner,
@@ -52,15 +52,17 @@ const NewReview = ({language}) =>{
         }));
       });
     }
-  },[current]);
+  },[isAuthenticated]);
   
   useEffect(()=>{
-    if(current){
-      dbUsers.child(current.uid).on('value', (snapChat)=>{
-        setUser(snapChat.val());
-      });
+    const getUser = async (e)=>{
+      try{let d = await currentUser(e); setUser(d);
+      }catch(error){console.log(error);}
     }
-  },[current]);
+    
+    if(isAuthenticated && isMounted.current){getUser({id:isAuthenticated,avatar:true});}
+  },[isAuthenticated]);
+  
   useEffect(()=>{
     setDatas(prevData=>({...prevData,revised:!getINegativeWords(datas.text)}))
   },[datas.text]);
@@ -90,7 +92,7 @@ const NewReview = ({language}) =>{
   
   async function handlePublicReview(){
     try{
-      dbReviews.child(current.uid).set(datas);
+      dbReviews.child(isAuthenticated).set(datas);
     }catch(error){
       console.log(error);
     }finally{
