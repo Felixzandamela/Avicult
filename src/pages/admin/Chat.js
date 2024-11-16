@@ -2,7 +2,7 @@ import React,{useState, useEffect,useRef} from "react";
 import {Link,useNavigate, Outlet, NavLink,useParams} from "react-router-dom";
 import {texts} from "../texts/Texts";
 import {Avatar,Alert,ShareLink,MinLoder,formatDate,getCurrentTime,idGenerator, getColor, Toast,useFileName} from "../Utils";
-import {currentUser, dbChats, dbUsers,dbImages} from '../auth/FirebaseConfig';
+import {dbChats, dbUsers,dbImages} from '../auth/FirebaseConfig';
 import {getChats} from "../auth/FetchDatas";
 import {ImageViewer,ImageCropper} from "../modals/ImageTools";
 
