@@ -2,7 +2,7 @@ import React,{useState, useEffect,useRef} from "react";
 import {Link,useNavigate, Outlet, NavLink,useParams} from "react-router-dom";
 import {texts} from "../texts/Texts";
 import {Avatar,Alert,ShareLink,MinLoder,formatDate,getCurrentTime,idGenerator, getColor, Toast,useFileName} from "../Utils";
-import {dbChats, dbUsers,dbImages} from '../auth/FirebaseConfig';
+import {currentUser, dbChats, dbUsers,dbImages} from '../auth/FirebaseConfig';
 import {getChats} from "../auth/FetchDatas";
 import {ImageViewer,ImageCropper} from "../modals/ImageTools";
 
@@ -356,12 +356,12 @@ const Chat = ({language})=>{
           </div>
         </div>
         <div className="flex_c_c">
-          {chat && <div className="btn_circle flex_c_c">
+          {chat && <div className="btn_circle br60 flex_c_c">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-three-dots-vertical" viewBox="0 0 16 16">
               <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0"/>
             </svg>
-            <div className="a_c_menu">
-              <div onClick={()=>handleClear("all")}>{texts.clearThisConversation[language]}</div>
+            <div className="a_c_menu a_conatiner br4-a">
+              <div className="pdd6_10 flex_s_c" onClick={()=>handleClear("all")}>{texts.clearThisConversation[language]}</div>
             </div>
           </div>}
         </div>
