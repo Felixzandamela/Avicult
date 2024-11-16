@@ -1,17 +1,17 @@
 import React,{useState, useEffect,useRef} from "react";
 import {Link,useNavigate, Outlet, NavLink,useParams} from "react-router-dom";
 import {texts} from "../texts/Texts";
-import {Avatar,Alert, ShareLink,MinLoder, formatDate,getCurrentTime,idGenerator, getColor, Toast,useFileName} from "../Utils";
-import {currentUser,useAuth, dbChats, dbUsers,dbImages} from '../auth/FirebaseConfig';
+import {Avatar,Alert,ShareLink,MinLoder,formatDate,getCurrentTime,idGenerator, getColor, Toast,useFileName} from "../Utils";
+import {currentUser, dbChats, dbUsers,dbImages} from '../auth/FirebaseConfig';
 import {getChats} from "../auth/FetchDatas";
 import {ImageViewer,ImageCropper} from "../modals/ImageTools";
 
+const isAuthenticated = localStorage.getItem("isAuthenticated");
 const Chat = ({language})=>{
   const {id} = useParams();
-  const chatId = id || currentUser().id;
+  const chatId = id || isAuthenticated;
   const navigate = useNavigate();
-  const user = currentUser();
-  const current = useAuth();
+  
   const isMounted = useRef(true);
   const bottom = useRef(null);
   const textarea = useRef(null);
@@ -88,7 +88,7 @@ const Chat = ({language})=>{
   }, [chatId]);
   
   useEffect(()=>{
-    if(datas && datas.data && current){
+    if(datas && datas.data && isAuthenticated){
       const index = 0;
       // Reduzir mensagens semelhantes
       const newData =  datas.data.reduce((acc, item,id) => {
@@ -113,14 +113,14 @@ const Chat = ({language})=>{
       // Marcar mensagens não visualizadas como visualizadas
       let noSeens = [];
       for(let k in datas.data){
-        if(!datas.data[k].seen && datas.data[k].autor.id !== current.uid){
+        if(!datas.data[k].seen && datas.data[k].autor.id !== isAuthenticated){
           dbChats.child(datas.id).child("data").child(k).update({
             seen: true
           });
         }
       }
     }
-  },[datas, current]);
+  },[datas,isAuthenticated]);
   
   //Assim que os dados de chat forem carregados, rola para baixo  
   useEffect(()=>{
@@ -146,7 +146,7 @@ const Chat = ({language})=>{
     scrollToBottom();
   }
   
-  //No mensagem com todos os respeitivos dados
+  //Nova mensagem com todos os respeitivos dados
   class NewMessage{
     constructor(chatId, autor){
       this.autor = autor,
@@ -163,11 +163,11 @@ const Chat = ({language})=>{
   
   //Carregar dados da nova mensagem assim que for digitado
   useEffect(()=>{
-    if(current){
-      const sendNewMsg = new NewMessage(chatId, current.uid);
+    if(isAuthenticated){
+      const sendNewMsg = new NewMessage(chatId, isAuthenticated);
       setNewMsg(sendNewMsg);
     }
-  },[values, chatId, current]);
+  },[values, chatId, isAuthenticated]);
   
   //Ação para verificar valores e enviar uma nova mensagem assim que atender os requisitos
   const handleSubmit=(event) => {
@@ -304,7 +304,7 @@ const Chat = ({language})=>{
     });
   }// scrollIntoView last message
   const color = localStorage.getItem('avatarColor');
-  const header = datas && datas.owner.id !== user.id? datas.owner : support ;
+  const header = datas && datas.owner.id !== isAuthenticated? datas.owner : support ;
   const MAX_DISPLAY = 5, maxDisplay = 4;
   const setImages = (e)=>{
     setStates(prevState=>({...prevState,images:e}));
@@ -371,7 +371,7 @@ const Chat = ({language})=>{
       <div className="a_chat_roller a_scroll_bar">
         {chat && chat.map((item, n) =>(
           <div key={idGenerator(80)}>
-            {item.autor.id === user.id &&
+            {item.autor.id === isAuthenticated &&
               <div key={idGenerator(70)} className="messageCard mset flex_e">
                 <div className="messages">
                   {item.messages.map(message=>(
