@@ -1,7 +1,7 @@
 import React,{useState, useEffect,useRef} from "react";
 import {Link,useNavigate, Outlet, useParams} from "react-router-dom";
 import {texts} from "../texts/Texts";
-import {dbUsers,currentUser} from '../auth/FirebaseConfig';
+import {dbUsers, useAuth, currentUser} from '../auth/FirebaseConfig';
 import {Avatar, MinLoder,Copy,formatDate, Toast, Exclamation, PasswordViewer,chackeVal,authErros} from "../Utils";
 const isAuthenticated = localStorage.getItem("isAuthenticated");
 
@@ -119,7 +119,7 @@ const UpdateModal = ({language, user, field}) =>{
 
 const UpdatePasswordModal = ({language}) =>{
   const navigate = useNavigate();
-  const isAuthenticated = useAuth();
+  const isAuth = useAuth();
   const [states, setStates] = useState({loading: false, viewPassword: false});
   const [datas,setDatas]=useState({password:"", repeatPassword:""});
   const [error,setError]=useState({password:null, repeatPassword: null, error:{text:null,stack:null}});
@@ -142,7 +142,7 @@ const UpdatePasswordModal = ({language}) =>{
   
   const handleChangePassword =  ()=>{
     const password = datas.password;
-    isAuthenticated.updatePassword(password).then(()=>{
+    isAuth.updatePassword(password).then(()=>{
       setStates(prevState=>({...prevState,loading:false}));
       setError(prevError=>({...prevError,error:{text:texts.successfulPasswordChenged[language],stack:"success"}}));
       navigate(-1,{replace:true});
