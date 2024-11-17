@@ -3,7 +3,6 @@ import {Link,useNavigate, Outlet, NavLink,useParams} from "react-router-dom";
 import Highcharts from "highcharts";
 import {texts} from "../texts/Texts";
 import {ThisWeek,MinLoder,getLast12Months, formatNum, formatDate,getCurrentTime, statusIcons, EmptyCard,handleScrollTo,ShareLink} from "../Utils";
-import {currentUser} from '../auth/FirebaseConfig';
 import {userDeposits, userWithdrawals,userCommissions, earnes} from "../auth/FetchDatas";
 
 const isAuthenticated = localStorage.getItem("isAuthenticated");
@@ -160,7 +159,7 @@ const DashboardUser =({language})=>{
             </div>
           </div>
           
-          {datas && <div className="i_card_wrap">
+          {isAuthenticated && <div className="i_card_wrap">
             <div className="i_card_link">
               <div className="flex_b_c">
                 <div className="left flex_s">
