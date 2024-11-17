@@ -7,6 +7,7 @@ const isAuthenticated = localStorage.getItem("isAuthenticated");
 
 const UpdatesUserModal = ({language}) =>{
   const navigate = useNavigate();
+  const isMounted = useRef(true);
   const searchParams = new URLSearchParams(window.location.search);
   const field = searchParams.get('field');
   const [datas,setDatas]=useState(null);
