@@ -72,8 +72,8 @@ export const Select = ({language, type, onSelection})=>{
   );
 }
 
-export const Search = ({language, val, type, onChange})=>{
-  const [value, setValue] = useState(val);
+export const Search = ({language, type, onChange})=>{
+  const [value, setValue] = useState("");
   const handleChage=(event)=>{setValue(event.target.value);}
   useEffect(()=>{onChange(value);},[value]);
   
