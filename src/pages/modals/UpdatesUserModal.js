@@ -60,7 +60,7 @@ const UpdateModal = ({language, user, field}) =>{
   } // verificação de formulário
   
   const handleSaveName =  ()=>{
-    dbUsers.child(isAuthenticated).update({
+    dbUsers.child(user.id).update({
       [field]:datas[field]
     }).then(()=>{
       setLoading(false);
