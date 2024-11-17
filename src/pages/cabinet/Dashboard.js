@@ -3,19 +3,28 @@ import {Link,useNavigate, Outlet, NavLink,useParams} from "react-router-dom";
 import Highcharts from "highcharts";
 import {texts} from "../texts/Texts";
 import {ThisWeek,MinLoder,getLast12Months, formatNum, formatDate,getCurrentTime, statusIcons, EmptyCard,handleScrollTo,ShareLink} from "../Utils";
+import {currentUser,useAuth} from '../auth/FirebaseConfig';
 import {userDeposits, userWithdrawals,userCommissions, earnes} from "../auth/FetchDatas";
 
 const isAuthenticated = localStorage.getItem("isAuthenticated");
 const DashboardUser =({language})=>{
   const navigate = useNavigate();
   const spline = useRef(null);
+  const isAuth = useAuth();
   const deposits = userDeposits(language);
   const earnings = earnes(language);
   const withdrawals = userWithdrawals(language);
   const commissions = userCommissions(language);
   const [datas,setDatas]=useState(null);
   
-
+  useEffect(()=>{
+    const getUser = async (e)=>{
+      try{let d = await currentUser(e); setDatas(d);
+      }catch(error){console.log(error);}
+    }
+    if(isAuth){getUser({id:isAuth.uid,avatar:true});}
+  },[isAuth]);
+  
   const options = {
   chart:{
     type:"areaspline", //'spline or column
