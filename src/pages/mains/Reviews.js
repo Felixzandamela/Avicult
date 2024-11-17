@@ -62,11 +62,11 @@ const Reviews =({language, mode, onChanges})=>{
   if(mode === "admin"){
     return <AdminReviews language={language} data={data}/>
   }else{
-    return <Review language={language} data={data}/>
+    return <Review language={language} data={data} onChanges={onChanges}/>
   }
 }
 
-const Review =({language, data})=>{
+const Review =({language, data, onChanges})=>{
   const current = useAuth();
   const [states, setStates] = useState({loading:true,limitTo:5,showPaginator:true,page:1});
   const [datas,setDatas] = useState(null);
