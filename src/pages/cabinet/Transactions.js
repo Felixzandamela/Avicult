@@ -90,8 +90,8 @@ const TransactionsCard = ({type,language,mode})=>{
         <div className="a_sec_header_wrap flex_b_c">
         <h1 className="page-title">{texts[type][language]}({list && list.length})</h1>
         <div className="a_selection_wrap flex_wrap">
-        {mode === "admin" && <Search val={states.userId} language={language} type={"userId"} onChange={(e)=>setStates(prevState=>({...prevState,userId:e}))}/>}
-        {mode === "admin" && <Search val={states.dataId} language={language} type={"dataId"} onChange={(e)=>setStates(prevState=>({...prevState,dataId:e}))}/>}
+        {mode === "admin" && <Search language={language} type={"userId"} onChange={(e)=>setStates(prevState=>({...prevState,userId:e}))}/>}
+        {mode === "admin" && <Search language={language} type={"dataId"} onChange={(e)=>setStates(prevState=>({...prevState,dataId:e}))}/>}
         <Select language={language} type={"date"} onSelection={(v)=>setStates(prevState=>({...prevState, dateType:v}))}/> 
         <Select language={language} type={"transactions"} onSelection={(v)=>setStates(prevState=>({...prevState,statusType:v}))}/>
           {type === "deposits" && mode !== "admin" && <Link to="/cabinet/fleets" className="a plus-fixed">
