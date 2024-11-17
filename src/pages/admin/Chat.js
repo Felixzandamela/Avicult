@@ -279,7 +279,7 @@ const Chat = ({language})=>{
           removeImage(imagesId);
         }
       }
-      dbChats.child(datas.owner.id).child('data').transaction((currentMessages) => {
+      dbChats.child(chatId).child('data').transaction((currentMessages) => {
         return "";
       }).then(()=>{
         setAlertDatas(null);
