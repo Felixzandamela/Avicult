@@ -248,6 +248,7 @@ export const texts ={
   invalidPassword:{"pt-PT":"Senha inválido","en-US":"Invalid password!"},
   passwordDontMatch:{"pt-PT":"As senhas não combinam!", "en-US":"Password don't match!"},
   emailAlreadyInUse:{"pt-PT":"O endereço de e-mail já está em uso por outra conta!" ,"en-US":"The email address is already in use by another account"},
+  sendConfirmationEmail:{"pt-PT":"Enviamos lhe um email de confirmação da conta, por favor verifique a sua caixa de emails.","en-US":"We have sent you an account confirmation email, please check your inbox."},
   wrongPassword:{"pt-PT":"Senha incorreta","en-US":"Wrong password!"},
   tooManyRequests:{"pt-PT":"O acesso a esta conta foi temporariamente desabilitado devido a muitas tentativas de login malsucedidas. Você pode restaurá-lo imediatamente redefinindo sua senha ou pode tentar novamente mais tarde.","en-US":"Access to this account has been temporarily disabled due to many failed login attempts. You can immediately restore it by resetting your password or you can try again later."},
   requiresRecentLogin:{"pt-PT":"Esta operação é sensível e requer autenticação recente. Faça login novamente antes de tentar novamente esta solicitação.","en-US":"This operation is sensitive and requires recent authentication. Please log in again before retrying this request."},
