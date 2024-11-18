@@ -310,7 +310,7 @@ const TransactionCard = ({language,datas,mode,type,newType}) =>{
       <Toast props={error.error} onClear={()=>setError(prevError=>({...prevError,error:{text:null,stack:null}}))}/>
       <div className="flex_c_c">
         <div className="m_gateway flex_c_c">
-          <img style={{width:"26px",marginRight:"10px"}} src={datas && datas.paymentDetails.gateway.avatar &&  datas.paymentDetails.gateway.avatar.src} className=""/>
+          <img style={{width:"26px",marginRight:"10px"}} src={datas && datas.paymentDetails.gateway.avatar && datas.paymentDetails.gateway.avatar.src} className=""/>
           <p>{datas && datas.paymentDetails.gateway.name}</p>
         </div>
       </div>
