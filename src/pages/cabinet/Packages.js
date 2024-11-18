@@ -125,7 +125,7 @@ const PackagesCards = ({ language, packages, mode }) => {
           <div className="package_card a_conatiner">
             <div className="flex_b">
               <div className="package_header_container">
-                <img src={pack.image.src} alt="fleet" />
+               <img src={pack.image && pack.image.src} alt="fleet" />
               </div>
               <div className="pakage_header_details">
                 <h3>{pack.name}</h3>
