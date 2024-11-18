@@ -222,7 +222,7 @@ const Layout = ({props, mode, onChanges}) =>{
                   <div className="flex_c_c a_activity_icon"><i className="bi bi-calendar2-date"></i></div>
                   <div className="">
                     <p>{texts.memberSince[props.language]}</p>
-                    <div className="a_activity_p">{datas && formatDate(datas.createdAt, props.language).fullDate}</div>
+                    <div className="a_activity_p">{datas && formatDate(datas.date, props.language).fullDate}</div>
                   </div>
                 </div>
                 <div className="flex_s a_activity delete">
