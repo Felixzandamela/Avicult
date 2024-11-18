@@ -40,7 +40,7 @@ export const FleetModal = ({language}) =>{
   },[id,action]);
   
   const handleSaveImg = (e)=>{
-    setImages(prevImg=>({...prevImg,src:e}));
+    setImages(prevImg=>({...prevImg,id:datas.id,src:e}));
     clearFileName();
   };
   
@@ -76,7 +76,7 @@ export const FleetModal = ({language}) =>{
   
   const handleSave=()=>{
     dbPackages.child(datas.id)[action](datas).then(()=>{
-      dbImages.child(images.id)[action](images).then(()=>{
+      dbImages.child(datas.id)[action](images).then(()=>{
         console.log("done");
         setStates(prevState=>({...prevState,loading:false}));
         navigate(-1,{replace:true});
