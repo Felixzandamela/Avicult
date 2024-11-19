@@ -374,7 +374,7 @@ const TransactionCard = ({language,datas,mode,type,newType}) =>{
         </div>
         ||<div>
         {type === "commissions" && datas && <Link to={`/admin/transactions/deposits?owner=&id=${datas.from}`} className="a a_link_main t_link flex_e_c">{texts.viewSource[language]}</Link>}
-          <div className="transaction_owner_details flex_s">
+          <Link to={`/admin/users?id=${datas && datas.owner.id}`} className="a transaction_owner_details flex_s">
             <div className="transaction_owner_avatar">
              {datas && <Avatar avatar={datas.owner}/>}
             </div>
@@ -382,7 +382,7 @@ const TransactionCard = ({language,datas,mode,type,newType}) =>{
               <h4>{datas && datas.owner.name}</h4>
               <p className="">ID: {datas && datas.owner.id}</p>
             </div>
-          </div>
+          </Link>
           
           {confirm && 
             <div className="transaction_action">
