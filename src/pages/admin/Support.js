@@ -103,7 +103,7 @@ const SupportChat =({language})=>{
                       }
                     }
                     return(
-                    <NavLink to={`/admin/support/chat/${item.id}`} key={index}  className={({isActive})=> isActive ? "a a_chat_li currentChat flex_s" : "a a_chat_li flex_s"}>
+                    <NavLink to={`/admin/support/chat/${item.id}?mode=admin`} key={index}  className={({isActive})=> isActive ? "a a_chat_li currentChat flex_s" : "a a_chat_li flex_s"}>
                       <div className="a_chat_avatar">
                         <Avatar avatar={item.owner} color={item.chatColor}/>
                       </div>
