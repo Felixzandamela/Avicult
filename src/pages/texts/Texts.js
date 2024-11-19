@@ -295,6 +295,7 @@ export const texts ={
   chatClearedCuccessfully:{"pt-PT":"Conversa limpado com sucesso.","en-US":"Conversation cleared successfully."},
   confirmRemoveMsg:{"pt-PT":"Pretende eliminar essa mensagem?","en-US":"Do you want to delete this message?"},
   cannotBeUndone:{"pt-PT":"Essa ação não pode ser anulada","en-US":"This action cannot be undone"},
+  seeProfile:{"pt-PT":"Ver o perfil","en-US":"View profile"},
   
   selected:{"pt-PT":"selecionados","en-US":"selected"},
   updateReviews:{"pt-PT":"Atualizar críticas","en-US":"Update reviews"},
