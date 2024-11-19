@@ -8,22 +8,28 @@ import {dbUsers,dbNotifications} from '../auth/FirebaseConfig';
 
 const Users = ({language}) =>{
   const isMounted = useRef(true);
+  const searchParams = new URLSearchParams(window.location.search);
+  const params = Object.fromEntries(searchParams.entries());
+  const {id} = params;
   const [error,setError]=useState({error:{text:null, stack:null}});
   const [alertDatas, setAlertDatas] = useState(null);
   const [list, setList] = useState(null);
-  const [states, setStates] = useState({page:1,dateType:"",statusType:"", name:"", isLoader:true,limitTo:20, statusBan:null});
+  const [states, setStates] = useState({page:1,dateType:"",dataId:"",statusType:"", name:"", isLoader:true,limitTo:20, statusBan:null});
   const [datas,setDatas] = useState(null);
   const allUsers = getUsers(language,"totalUsers");
-  
-  
+  useEffect(()=>{
+    if(id && isMounted.current){setStates(prevState=>({...prevState,dataId:id}));}
+  },[id]);
   useEffect(()=>{
     if(allUsers){
       setStates(prevState=>({...prevState,isLoader:false}));
       const filteredData = allUsers.datas.filter((item) => {
-        if(states.name !== "" &&  item.name.toLowerCase().indexOf(states.name.toLowerCase()) >=0 || states.name === ""){
+        if(states.name !== "" && item.name.toLowerCase().indexOf(states.name.toLowerCase()) >=0 || states.name === ""){
           if ((states.dateType === "today" && formatDate(getCurrentTime().fullDate, language).onlyDate === formatDate(item.date, language).onlyDate) || (states.dateType === "month" && formatDate(getCurrentTime().fullDate, language).onlyMonthAndYear === formatDate(item.date, language).onlyMonthAndYear) || states.dateType === ""){
             if (states.statusType === "" ||  !toBool(states.statusType) && !item.isBanned || toBool(states.statusType) && item.isBanned) {
+              if(states.dataId === item.id || states.dataId === ""){
                 return true; // O item atende aos critérios de data e status
+              }
             }
           }
         }
@@ -106,6 +112,7 @@ const Users = ({language}) =>{
           <h1 className="page-title">Users</h1>
           <div className="a_selection_wrap flex_wrap">
             <Search language={language} onChange={(e)=>setStates(prevState=>({...prevState,name:e}))}/>
+            <Search language={language} type={"dataId"} onChange={(e)=>setStates(prevState=>({...prevState,dataId:e}))}/>
             <Select language={language} type={"date"} onSelection={(v)=>setStates(prevState=>({...prevState, dateType:v}))}/> 
             <Select language={language} type={"userStatus"} onSelection={(v)=>setStates(prevState=>({...prevState,statusType:v}))}/>
           </div>
@@ -142,15 +149,15 @@ const Users = ({language}) =>{
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-three-dots-vertical" viewBox="0 0 16 16">
                         <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
                       </svg>
-                       <div className="a_c_menu a_conatiner"> 
-                        <Link to={`/admin/transactions/deposits?owner=${item.id}`} className="a"> <div className="flex_s_c"> <i className="bi bi-box-arrow-in-up"></i>{texts.deposits[language]}</div> </Link>
-                        <Link to={`/admin/transactions/withdrawals?owner=${item.id}`} className="a"> <div className="flex_s_c"> <i className="bi bi-box-arrow-down"></i>{texts.withdrawals[language]}</div> </Link>
-                         <Link to={`/admin/transactions/commissions?owner=${item.id}`} className="a"> <div className="flex_s_c"> <i className="bi bi-link-45deg"></i>{texts.commissions[language]}</div> </Link>
-                          <Link to={`/admin/support/chat/${item.id}`} className="a">  <div className="flex_s_c"> <i className="bi bi-chat-right-text"></i>{texts.sendMessage[language]}</div></Link>
-                        <div onClick={()=>handleBann(item.isBanned, item.name,item.id)} className={`${!item.isBanned ? "ban": "reactive"}  flex_b_c`}>
+                       <div className="a_c_menu a_conatiner br4-a"> 
+                        <Link to={`/admin/transactions/deposits?owner=${item.id}&id=`} className="a pdd6_10 flex_s_c"> <i className="bi bi-box-arrow-in-up"></i>{texts.deposits[language]}</Link>
+                        <Link to={`/admin/transactions/withdrawals?owner=${item.id}&id=`} className="a pdd6_10 flex_s_c"> <i className="bi bi-box-arrow-down"></i>{texts.withdrawals[language]}</Link>
+                         <Link to={`/admin/transactions/commissions?owner=${item.id}&id=`} className="a pdd6_10 flex_s_c"> <i className="bi bi-link-45deg"></i>{texts.commissions[language]}</Link>
+                          <Link to={`/admin/support/chat/${item.id}`} className="a pdd6_10 flex_s_c ellipsis"> <i className="bi bi-chat-right-text"></i>{texts.sendMessage[language]}</Link>
+                        <div onClick={()=>handleBann(item.isBanned, item.name,item.id)} className={`${!item.isBanned ? "ban": "reactive"} pdd6_10 flex_b_c`}>
                           <p  className="flex_s_c"> <i className={`bi ${!item.isBanned ? "bi-person-slash" : "bi-person-check"}`}> </i> {!item.isBanned && texts.ban[language] || texts.reactivate[language]}</p>
                         </div>
-                         <div className="ban flex_s_c"> <i className="bi bi-trash"> </i>Deletar</div>
+                         <div className="ban pdd6_10 flex_s_c"> <i className="bi bi-trash"> </i>Deletar</div>
                       </div>
                     </div>
                   </div>
