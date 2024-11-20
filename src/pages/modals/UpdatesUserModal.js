@@ -3,26 +3,15 @@ import {Link,useNavigate, Outlet, useParams} from "react-router-dom";
 import {texts} from "../texts/Texts";
 import {dbUsers, useAuth, currentUser} from '../auth/FirebaseConfig';
 import {Avatar, MinLoder,Copy,formatDate, Toast, Exclamation, PasswordViewer,chackeVal,authErros} from "../Utils";
-const isAuthenticated = localStorage.getItem("isAuthenticated");
 
 const UpdatesUserModal = ({language}) =>{
   const navigate = useNavigate();
   const isMounted = useRef(true);
   const searchParams = new URLSearchParams(window.location.search);
   const field = searchParams.get('field');
-  const [datas,setDatas]=useState(null);
+  const datas = currentUser(false);
   
-  useEffect(()=>{
-    const getUser = async (e)=>{
-      try{let d = await currentUser(e); setDatas(d);
-      }catch(error){console.log(error);}
-    }
-    if(isAuthenticated && isMounted.current){getUser({id:isAuthenticated,avatar:false});}
-  },[isAuthenticated]);
-  
-  if(!datas){
-    return null;
-  }else{
+  if(!datas){return null;}else{
     if(!/^(name|password|phoneNumber)$/.test(field)){
       return null;
       navigate("/undefined", {replace:true});
@@ -34,7 +23,6 @@ const UpdatesUserModal = ({language}) =>{
 
 const UpdateModal = ({language, user, field}) =>{
   const navigate = useNavigate();
-  const isAuthenticated = useAuth();
   const [loading,setLoading]= useState(false);
   const [datas,setDatas]=useState({[field]:user[field]});
   const [error,setError]=useState({[field]:null,error:{text:null,stack:null}});
@@ -60,13 +48,11 @@ const UpdateModal = ({language, user, field}) =>{
   } // verificação de formulário
   
   const handleSaveName =  ()=>{
-    dbUsers.child(user.id).update({
-      [field]:datas[field]
-    }).then(()=>{
+    dbUsers.child(user.id).update({[field]:datas[field]}).then(()=>{
       setLoading(false);
       navigate(-1,{replace:true});
     }).catch((error)=>{
-      console.log(error)
+      console.log(error);
       setError(prevError=>({...prevError,error:{text:error,stack:"error"}}));
     });
   }
@@ -115,7 +101,6 @@ const UpdateModal = ({language, user, field}) =>{
     </div>
   );
 }
-
 
 const UpdatePasswordModal = ({language}) =>{
   const navigate = useNavigate();
@@ -197,5 +182,4 @@ const UpdatePasswordModal = ({language}) =>{
     </div>
   );
 }
-
 export default UpdatesUserModal;
