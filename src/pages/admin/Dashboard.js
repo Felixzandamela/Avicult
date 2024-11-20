@@ -2,14 +2,12 @@ import React,{useState, useEffect,useRef} from "react";
 import {Link,useNavigate, Outlet, NavLink,useParams} from "react-router-dom";
 import Highcharts from "highcharts";
 import {texts} from "../texts/Texts";
-import {ThisWeek,MinLoder,getLast12Months, formatNum, formatDate,getCurrentTime, statusIcons, EmptyCard,handleScrollTo,ShareLink} from "../Utils";
-import {currentUser,dbUsers} from '../auth/FirebaseConfig';
+import {MinLoder,getLast12Months, formatNum, formatDate,getCurrentTime, statusIcons, EmptyCard,handleScrollTo,ShareLink} from "../Utils";
 import {userDeposits, userWithdrawals,userCommissions,getUsers,FleetsDatas} from "../auth/FetchDatas";
 
 const DashboardAdmin =({language})=>{
   const navigate = useNavigate();
   const spline = useRef(null);
-  const current = currentUser();
   const deposits = userDeposits(language,"admin");
   const withdrawals = userWithdrawals(language,"admin");
   const commissions = userCommissions(language,"admin");
@@ -17,7 +15,7 @@ const DashboardAdmin =({language})=>{
   const admins = getUsers(language,"administrators");
   const bannedUsers = getUsers(language,"bannedUsers");
   const fleets = FleetsDatas();
-  const [uid,setUid]=useState(null);
+  
   const options = {
   chart:{
     type:"areaspline", //'spline or column
@@ -109,7 +107,7 @@ const DashboardAdmin =({language})=>{
         <div className="a_box">
           <div className="a_conatiner flex_b">
             <div className="a_insert_box">
-              <div>{deposits && formatNum(deposits.total) }</div>
+              <div>{deposits && formatNum(parseFloat(deposits.total).toFixed(2))}</div>
               <p>{texts.deposits[language]}</p>
               <div className="a_percentage"> <span style={{background:deposits &&  `RGBA(${deposits.percentageDetails.color},0.10`, color:deposits && `RGB(${deposits.percentageDetails.color})`}}> <i className={deposits && deposits.percentageDetails.arrow}></i> {deposits && deposits.percentageDetails.percentage }%</span> {deposits && texts[deposits.percentageDetails.period][language]}</div>
             </div>
@@ -119,7 +117,7 @@ const DashboardAdmin =({language})=>{
         <div className="a_box withdrawals">
           <div className="a_conatiner flex_b">
             <div className="a_insert_box">
-              <div>{withdrawals && formatNum(withdrawals.total) }</div>
+              <div>{withdrawals && formatNum(parseFloat(withdrawals.total).toFixed(2))}</div>
               <p>{texts.withdrawals[language]}</p>
               <div className="a_percentage"> <span style={{background:withdrawals &&  `RGBA(${withdrawals.percentageDetails.color},0.10`, color:withdrawals && `RGB(${withdrawals.percentageDetails.color})`}}> <i className={withdrawals && withdrawals.percentageDetails.arrow}></i> {withdrawals && withdrawals.percentageDetails.percentage }%</span> {withdrawals && texts[withdrawals.percentageDetails.period][language]}</div>
             </div>
@@ -129,7 +127,7 @@ const DashboardAdmin =({language})=>{
         <div className="a_box all">
           <div className="a_conatiner flex_b">
             <div className="a_insert_box">
-              <div>{commissions && formatNum(commissions.total) }</div>
+              <div>{commissions && formatNum(parseFloat(commissions.total).toFixed(2))}</div>
               <p>{texts.commissions[language]}</p>
               <div className="a_percentage"> <span style={{background:commissions &&  `RGBA(${commissions.percentageDetails.color},0.10`, color:commissions && `RGB(${commissions.percentageDetails.color})`}}><i className={commissions && commissions.percentageDetails.arrow}></i> {commissions && commissions.percentageDetails.percentage || 0 }%</span>{commissions && texts[commissions.percentageDetails.period][language]}</div>
             </div>
@@ -207,7 +205,7 @@ const DashboardAdmin =({language})=>{
               </div>
             </div>
             <div className="prog_wrapper">
-              {fleets && fleets.datas.map(item =>(
+              {fleets && fleets.datas && fleets.datas.map(item =>(
               <div key={item.id} className="flex_b_c prog_card m10">
                 <div className="prog_names">
                   <h5>{item.name}</h5>
