@@ -2,28 +2,19 @@ import React,{useState, useEffect,useRef} from "react";
 import {Link,useNavigate, Outlet, NavLink,useParams} from "react-router-dom";
 import Highcharts from "highcharts";
 import {texts} from "../texts/Texts";
-import {ThisWeek,MinLoder,getLast12Months, formatNum, formatDate,getCurrentTime, statusIcons, EmptyCard,handleScrollTo,ShareLink} from "../Utils";
-import {currentUser,useAuth} from '../auth/FirebaseConfig';
+import {MinLoder,getLast12Months, formatNum, formatDate,getCurrentTime,ShareLink} from "../Utils";
+import {currentUser} from '../auth/FirebaseConfig';
 import {userDeposits, userWithdrawals,userCommissions, earnes} from "../auth/FetchDatas";
 
 const isAuthenticated = localStorage.getItem("isAuthenticated");
 const DashboardUser =({language})=>{
   const navigate = useNavigate();
   const spline = useRef(null);
-  const isAuth = useAuth();
   const deposits = userDeposits(language);
   const earnings = earnes(language);
   const withdrawals = userWithdrawals(language);
   const commissions = userCommissions(language);
-  const [datas,setDatas]=useState(null);
-  
-  useEffect(()=>{
-    const getUser = async (e)=>{
-      try{let d = await currentUser(e); setDatas(d);
-      }catch(error){console.log(error);}
-    }
-    if(isAuth){getUser({id:isAuth.uid,avatar:true});}
-  },[isAuth]);
+  const datas= currentUser(false);
   
   const options = {
   chart:{
@@ -97,28 +88,26 @@ const DashboardUser =({language})=>{
     <section className="a_sec m20">
       <header className="a_sec_header flex_b_c">
         <h1 className="page-title">{texts.dashboard[language]}</h1>
-           <div className="flex_c_c">
-            <Link to="/cabinet/dashboard/withdraw" className="a">
+        <div className="flex_c_c">
+          <Link to="/cabinet/dashboard/withdraw" className="a">
             <div className="a_reload withdraw flex_c_c"> <p className="a_today_text">{texts.withdrawNow[language]} </p>
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" className="bi bi-box-arrow-down" viewBox="0 0 16 16">
                 <path fillRule="evenodd" d="M3.5 10a.5.5 0 0 1-.5-.5v-8a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 0 0 1h2A1.5 1.5 0 0 0 14 9.5v-8A1.5 1.5 0 0 0 12.5 0h-9A1.5 1.5 0 0 0 2 1.5v8A1.5 1.5 0 0 0 3.5 11h2a.5.5 0 0 0 0-1z"/>
                 <path fillRule="evenodd" d="M7.646 15.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 14.293V5.5a.5.5 0 0 0-1 0v8.793l-2.146-2.147a.5.5 0 0 0-.708.708z"/>
               </svg>
             </div>
-          </Link>
-          
-              <Link to="/cabinet/fleets" className="a">
-            <div className="a_reload flex_c_c"> <p className="">{texts.depositNow[language]} </p>
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" className="bi bi-box-arrow-in-up" viewBox="0 0 16 16">
-                <path fillRule="evenodd" d="M3.5 10a.5.5 0 0 1-.5-.5v-8a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 0 0 1h2A1.5 1.5 0 0 0 14 9.5v-8A1.5 1.5 0 0 0 12.5 0h-9A1.5 1.5 0 0 0 2 1.5v8A1.5 1.5 0 0 0 3.5 11h2a.5.5 0 0 0 0-1z"/>
-                <path fillRule="evenodd" d="M7.646 4.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 5.707V14.5a.5.5 0 0 1-1 0V5.707L5.354 7.854a.5.5 0 1 1-.708-.708z"/>
-              </svg>
-            </div>
-          </Link>
-            </div>
-        </header>
-          
-        <div className="flex_wrap a_wraps">
+        </Link>
+        <Link to="/cabinet/fleets" className="a">
+          <div className="a_reload flex_c_c"> <p className="">{texts.depositNow[language]} </p>
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" className="bi bi-box-arrow-in-up" viewBox="0 0 16 16">
+              <path fillRule="evenodd" d="M3.5 10a.5.5 0 0 1-.5-.5v-8a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 0 0 1h2A1.5 1.5 0 0 0 14 9.5v-8A1.5 1.5 0 0 0 12.5 0h-9A1.5 1.5 0 0 0 2 1.5v8A1.5 1.5 0 0 0 3.5 11h2a.5.5 0 0 0 0-1z"/>
+              <path fillRule="evenodd" d="M7.646 4.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 5.707V14.5a.5.5 0 0 1-1 0V5.707L5.354 7.854a.5.5 0 1 1-.708-.708z"/>
+            </svg>
+          </div>
+        </Link>
+      </div>
+    </header>
+      <div className="flex_wrap a_wraps">
           <div className="a_box">
               <div className="a_conatiner flex_b">
                 <div className="a_insert_box">
@@ -139,8 +128,6 @@ const DashboardUser =({language})=>{
                 <div className="a_box_icon flex_c_c"><i className="bi bi-currency-dollar"></i></div>
               </div>
             </div>
-            
-            
             <div className="a_box all">
               <div className="a_conatiner flex_b">
                 <div className="a_insert_box">
@@ -167,7 +154,6 @@ const DashboardUser =({language})=>{
               </div>
             </div>
           </div>
-          
           {isAuthenticated && <div className="i_card_wrap">
             <div className="i_card_link">
               <div className="flex_b_c">
@@ -187,7 +173,7 @@ const DashboardUser =({language})=>{
               </div>
             </div>
           </div>
-          }
+        }
       <Outlet/>
     </section>
   );
