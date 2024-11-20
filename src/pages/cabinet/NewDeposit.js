@@ -1,34 +1,34 @@
 import React, {useState,useEffect, useRef} from "react";
 import {useNavigate,useHistory, useLocation,Link, useParams} from "react-router-dom";
 import {formatNum, formatDate, expireDay, MinLoder,Loader,getCurrentTime, idGenerator, chackeVal} from "../Utils";
-import {currentUser, dbUsers,dbGateways,dbPaymentMethods,dbWithdrawals, dbDeposits,dbImages} from '../auth/FirebaseConfig';
+import {currentUser, useAuth, dbPackages,dbGateways,dbPaymentMethods,dbDeposits,dbCommissions,dbImages} from '../auth/FirebaseConfig';
 import {texts} from "../texts/Texts";
 
-const isAuthenticated = localStorage.getItem("isAuthenticated");
-const NewWithdrawal =({language})=>{
-  const [user , setUser] = useState(null);
+const NewDeposit =({language})=>{
   const navigate = useNavigate();
+  const isAuth = useAuth();
   const isMounted = useRef(true);
   const searchParams = new URLSearchParams(window.location.search);
   const id = searchParams.get('id');
-  
-  const [transactions, setTransactions] = useState(null);
+  const user = currentUser(false);
   const [myPaymentMethods, setMyPaymentMethods]=useState(null);
   const [states, setStates] = useState({stage:2,loading:false,toggle:false,showSave:null});
+  const [pack, setPack] = useState(null);
   const [gateways, setGateways] = useState(null);
-  const [newWithdrawal, setNewWithdrawal] = useState(null);
-  const [datas,setDatas] = useState({id:`B2C-${idGenerator()}`, amount:0.00,account:"",gateway:"",paymethod:"", saveAccount:false});
+  const [newDeposit, setNewDeposit] = useState(null);
+  const [newCommission, setNewCommission] = useState(null);
+  const [datas,setDatas] = useState({id:`C2B-${idGenerator()}`, amount:0,account:"",gateway:"",paymethod:"", saveAccount:false});
   const [error,setError] = useState({amount:null,account:null, gateway:null });
- 
-  useEffect(()=>{
-    const getUser = async (e)=>{
-      try{let d = await currentUser(e); setUser(d);
-      }catch(error){console.log(error);}
-    }
-    if(isAuthenticated && isMounted.current){getUser({id:isAuthenticated,avatar:false});}
-  },[isAuthenticated]);
+  const [cashback,setCashback] = useState(null);
+  const [uplineDeposits,setUplineDeposits] = useState(null);
   
   useEffect(()=>{
+    const handleChild=(snapChat)=> {
+      const newPackage = snapChat.val();
+      setPack(newPackage);
+      setDatas(prevData=>({...prevData,amount:newPackage.min}));
+    };
+    
     const handleAddGateways = snapChat => {
       const getewaysDatas = [];
       snapChat.forEach((snapChatData)=>{
@@ -46,13 +46,6 @@ const NewWithdrawal =({language})=>{
       });
     }
     
-    const depositDatas =[];
-    const handleDeposits =(snapChat)=>{
-      const newDeposit = snapChat.val();
-      depositDatas.push(newDeposit);
-      setTransactions([...depositDatas]);
-    }
-   
     const myPaymentMethodsDatas = [];
     const handleMyPaymentMethods = (snapChat) => {
       const newPayment = snapChat.val();
@@ -60,27 +53,74 @@ const NewWithdrawal =({language})=>{
       setMyPaymentMethods([...myPaymentMethodsDatas]);
     };
     
-    dbGateways.orderByChild("status").equalTo(true).once('value', handleAddGateways);
-    if(isAuthenticated){
-      dbDeposits.orderByChild('owner').equalTo(isAuthenticated).on('child_added', handleDeposits);
-      dbPaymentMethods.orderByChild('owner').equalTo(isAuthenticated).on('child_added', handleMyPaymentMethods);
+    const uplieDepositDatas = [];
+    const handleUplineDeposits = snapChat=>{
+      snapChat.forEach((snapChatData)=>{
+        const depositData = snapChatData.val()
+        if(depositData.status === "Inprogress" || depositData.status === "Completed"){
+          uplieDepositDatas.push(depositData);
+        }
+      });
+      setUplineDeposits(uplieDepositDatas);
     }
+    const upline = user && user.upline ? user.upline : undefined;
+    if(upline){
+      dbDeposits.orderByChild('owner').equalTo(upline).once('value', handleUplineDeposits);
+    }// if upline has deposits
+    
+    dbPackages.child(id).on('value', handleChild);
+    dbGateways.orderByChild("status").equalTo(true).once('value', handleAddGateways);
+    if(isAuth){
+      dbPaymentMethods.orderByChild('owner').equalTo(isAuth.uid).on('child_added', handleMyPaymentMethods);
+    }
+    dbGateways.orderByChild("account").equalTo("Cashback").on("value",(snapCash)=>{
+      if(snapCash.exists()){
+        snapCash.forEach((snapData)=>{
+          setCashback(snapData.val());
+        });
+      }
+    });
+    
     return () => {
-      dbGateways.orderByChild("status").equalTo(true).once('value', handleAddGateways);
+      if(upline){dbDeposits.orderByChild('owner').equalTo(upline).off('value', handleUplineDeposits);};
+      dbPackages.child(id).off('value', handleChild);
+      dbGateways.orderByChild("status").equalTo(true).once("value", handleAddGateways);
     };
-  },[id,isAuthenticated]);
+  },[id,isAuth,user]);
   
-  class NewWithdraw{
-    constructor(datas, owner){
+  
+  class NewDeposit{
+    constructor(datas, data, owner){
       this.id = datas.id;
-      this.owner = owner.id;
-      this.amount = !datas.amount ? 0 :  parseFloat(datas.amount);
-      this.fees =  Math.round(this.amount * (6 / 100));
-      this.totalReceivable = (this.amount - this.fees).toFixed(2);
+      this.owner = owner;
+      this.amount = !datas.amount ? 0 : parseFloat(datas.amount);
+      this.income = (datas.amount * (data.percentage /100));
+      this.totalIncome = this.amount + this.income;
+      this.fees = 0;
+      this.fleet = data.id;
       this.status = "Pending";
       this.paymentDetails = {
         account:datas.account,
         gateway: datas.gateway
+      };
+      this.date = getCurrentTime().fullDate;
+      this.expireAt = expireDay(data.maturity);
+    }
+  }
+  
+  class NewCommission{
+    constructor(owner){
+      this.id = `C2C-${idGenerator()}`;
+      this.owner=owner.upline;
+      this.amount=(Math.round(newDeposit.amount * (5 / 100))) > 150 ? 150 : Math.round(newDeposit.amount * (5 / 100));
+      this.totalReceivable = this.amount;
+      this.fees = 0;
+      this.status = "Pending";
+      this.from = newDeposit.id;
+      this.commissionedBy = newDeposit.owner;
+      this.paymentDetails ={
+        gateway: cashback ? cashback.id : null,
+        account:""
       };
       this.date = getCurrentTime().fullDate;
     }
@@ -96,9 +136,18 @@ const NewWithdrawal =({language})=>{
   },[datas.gateway,gateways]);
  
   useEffect(()=>{
-    if(user){setNewWithdrawal(new NewWithdraw(datas, user));}
-    return()=>setNewWithdrawal({});
-  },[datas, user]);
+    if(isAuth){
+    if(pack){setNewDeposit(new NewDeposit(datas, pack, isAuth.uid));}}
+    return()=>setNewDeposit({});
+  },[datas, pack, isAuth]);
+  
+  useEffect(()=>{
+    if(user){
+      if(newDeposit && uplineDeposits){
+        setNewCommission(new NewCommission(user));
+      }
+    }
+  },[newDeposit, user,uplineDeposits]);
   
   useEffect(()=>{
     if(datas.account.length >= 5){
@@ -108,37 +157,37 @@ const NewWithdrawal =({language})=>{
           return true;
         });
         setStates(prevState=>({...prevState,showSave:mpd}));
-      }else{setStates(prevState=>({...prevState,showSave:[]}));}
+      }else{
+        setStates(prevState=>({...prevState,showSave:[]}));
+      }
     }
-  },[datas.account])
+  },[datas.account]);
   
-  const checkAmount = ()=>{
-    const errors = new Array();
-    if(datas.amount < 50){errors.push(texts.unspecifiedBalance[language])}
-    if(datas.amount > user.balance){errors.push(`${texts.lowBalance[language]} ${formatNum(datas.amount)} MT`);}
-    return errors || null;
-  }
-  const checkAccount = ()=>{
-    let hasDeposited;
-    if(transactions){
-      const hasDep = transactions.filter((elem)=>{
-        if(elem.status === "Inprogress" && elem.paymentDetails.account === datas.account && elem.owner === newWithdrawal.owner  || elem.status === "Completed" && elem.paymentDetails.account === datas.account && elem.owner === newWithdrawal.owner){return true}
-      });
-      hasDeposited = hasDep;
-    }
-    const errors = new Array();
-    if(datas.paymethod.name === "M-pesa" && !datas.account.match(/^8[45]\d{7}$/)){errors.push(texts.invalidMpesaAccount[language]);}
-    if(datas.paymethod.name === "E-mola" && !datas.account.match(/^8[67]\d{7}$/)){errors.push(texts.invalidEmolaAccount[language]);}
-    if(!hasDeposited || hasDeposited.length === 0){errors.push(texts.noDepositsMadeWith[language]);}
-    return errors || null
+  const hasAccountAndUsed = ()=>{
+    const deposits =[];
+    const datasDeposits = dbDeposits.orderByChild('paymentDetails/account').equalTo(datas.account);
+    datasDeposits.once("value", (snapChat) =>{
+        snapChat.forEach((snapChatData)=>{
+          const depositData = snapChatData.val();
+          if(depositData.paymentDetails.account === datas.account && depositData.owner !== newDeposit.owner){
+            deposits.push(depositData);
+          }
+        });
+    });
+   return deposits;
   }
   
   const navigateTo = (stack,reason,error)=>{
     console.log(error);
-    navigate(`/cabinet/dashboard/message?type=${stack}&field=withdrawal&reason=${reason ? reason : ""}`,{replace:true});
+    setStates(prevState=>({...prevState,loading:false}));
+    if(stack === "success" && !datas.paymethod.paymentInstantly){
+      navigate(`/cabinet/transactions/deposits/view/${newDeposit.id}`,{replace:true});
+    }else{
+      navigate(`/cabinet/fleets/message?type=${stack}&field=deposit&reason=${reason ? reason : ""}`,{replace:true});
+    }
   }
-  
   const throwErr = (field, error)=>{
+   const hasAccountAndUse = hasAccountAndUsed();
     if(error.length <= 0 && isMounted){
       setStates(prevState=>({...prevState,loading:true}));
       setTimeout(()=>{
@@ -146,49 +195,57 @@ const NewWithdrawal =({language})=>{
         if(states.stage <= 2) {
           setStates(prevState=>({...prevState,stage:states.stage+1}));
         }else{
-          setStates(prevState=>({...prevState,loading:true}));
-         if(user.isBanned){
-            navigateTo("error","bunned","This user is bunned");
+          if(hasAccountAndUse.length >0){
+            setError(prevErr=>({...prevErr,account:texts.accountAlreadyUsed[language]}));
           }else{
-            dbWithdrawals.child(newWithdrawal.id).set(newWithdrawal).then(()=>{
-              let balance = dbUsers.child(newWithdrawal.owner).child('balance');
-              balance.transaction((currentBalance)=>{
-                return currentBalance - newWithdrawal.amount;
-              }).then(()=>{
+            setStates(prevState=>({...prevState,loading:true}));
+            if(user.isBanned){
+              navigateTo("error","contact-support","This user is bunned");
+            }else{
+              dbDeposits.child(newDeposit.id).set(newDeposit).then(()=>{
+                if(newCommission && newCommission.paymentDetails.gateway){
+                  dbCommissions.child(newCommission.id).set(newCommission).catch(()=>{console.log(error);});
+                }
                 if(datas.saveAccount){
-                  const sda ={
-                    owner: newWithdrawal.owner,
+                  const newPaymentMethods ={
+                    owner: newDeposit.owner,
                     id:idGenerator(24),
                     account: datas.account,
                     gateway: datas.gateway
                   }
-                  dbPaymentMethods.child(sda.id).set(sda).then(()=>{
-                    setStates(prevState=>({...prevState,loading:false}));
-                    navigateTo("success",null,"new payment method added");
-                  }).catch((error)=>{navigateTo("error","paymentmethod",error);});
-                }else{
-                  setStates(prevState=>({...prevState,loading:false}));
-                  navigateTo("success",null,"balance updated");
-                }
-              }).catch((error)=>{navigateTo("error", null, error);});
-            }).catch((error)=>{navigateTo("error",null,error);});
+                  dbPaymentMethods.child(newPaymentMethods.id).set(newPaymentMethods).then(()=>{
+                    navigateTo("success", null, "new deposit & new account saved");
+                  }).catch((error)=>{
+                    navigateTo("error","contact-support",error);
+                  });
+                }else{navigateTo("success", null, "new deposit");}
+              }).catch((error)=>{
+                navigateTo("error","contact-support",error);
+              });
+            }
           }
         }
       },1000);
-    }else{setError(prevErr=>({...prevErr,[field]:error[0]}));}
+    }else{setError(prevErr=>({...prevErr,[field]:error}));}
   }
   
   const handleSubmit=(e)=>{
     e.preventDefault();
+    const errors = new Array();
     let error;
     switch(states.stage){
-      case 2: error = checkAmount();
-      throwErr("amount", error);
-      break;
-      case 3: error = checkAccount();
-      throwErr("account", error);
-      break;
+      case 2: 
+        if(datas.amount < pack.min){errors.push(`${texts.lowAmount[language]} ${pack.min}`);}
+        if(datas.amount > pack.max){errors.push(texts.exceededAmount[language]);}
+        throwErr("amount", errors);
+        break;
+      case 3: 
+        if(datas.paymethod.name === "M-pesa" && !datas.account.match(/^8[45]\d{7}$/)){errors.push(texts.invalidMpesaAccount[language]);}
+        if(datas.paymethod.name === "E-mola" && !datas.account.match(/^8[67]\d{7}$/)){errors.push(texts.invalidEmolaAccount[language]);}
+        throwErr("account", errors);
+        break;
       default: console.log(null);
+      break;
     }
   }
   
@@ -200,24 +257,26 @@ const NewWithdrawal =({language})=>{
     const field = event.target.name; setError(prevError=>({...prevError,[field]:null}));
   }
   
-  const handleToggle =()=>{
+  const handleToggle = ()=>{
     setTimeout(() => {
       if(isMounted.current) { // verificando se o componente ainda está montado
         setStates(prevState=>({...prevState,toggle:!states.toggle}));
       }
     }, 500);
   }
-  
+ 
   useEffect(() => {
-    return () => {isMounted.current = false;}
+      return () => {
+      isMounted.current = false;
+    }
   }, []);
   
-  if(!user) return null;
+  if(!pack) return null;
   return(
     <div className="popUp flex_c_c">
       <div className="card_popup a_conatiner">
         <div className="modal_header flex_b_c">
-          <h4>{states.stage === 2 ? texts.newWithdrawalTitle[language] : states.stage === 3 ? texts.payMethodTitle[language] : "Thank you"}</h4>
+          <h4>{states.stage === 2 ? texts.calcTitle[language] : states.stage === 3 ? texts.payMethodTitle[language] : "Thank you"}</h4>
           <div className="flex_b_c"><svg disabled={states.loading} onClick={()=>navigate(-1,{replace:true})} className="a_close_popup" fill="currentColor" opacity="1.0" baseProfile="full" width="24" height="24" viewBox="0 0 24.00 24.00"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg></div>
         </div>
         <div className="modal_body">
@@ -231,18 +290,21 @@ const NewWithdrawal =({language})=>{
           <form className={states.stage === 2 && "active newDepositForms" || "newDepositForms"} onSubmit={handleSubmit}>
           <div className="input_card">
             <div className="input_wrap flex_b_c">
-              <input autoFocus={true} onChange={handleChange} onFocus={handleClearError} name="amount" value={datas.amount}  step="0.01" className={`${chackeVal(datas.amount, "input")} amountInput`} id="number" type="number" readOnly={states.loading}/>
+              <input autoFocus={true} onChange={handleChange} onFocus={handleClearError} name="amount" value={datas.amount}  step="0.01" className={chackeVal(datas.amount, "input")} id="number" type="number" readOnly={states.loading}/>
                 <label htmlFor="number">{texts.amount[language]}</label>
               <div className="input_left_box flex_c_c">MZN</div>
             </div>
             <div className="label_error"> {error && error.amount}</div>
           </div>
-          <div className="extra flex_b_c">{texts.fee[language]}<p className="amount">{newWithdrawal && formatNum(newWithdrawal.fees) || "___ "}<span></span></p></div>
-          <div className="extra flex_b_c">{texts.totalToReceive[language]} <p className="amount">{newWithdrawal &&  formatNum(newWithdrawal.totalReceivable) || "___ "} MZN</p></div>
+          <div className="extra flex_b_c">{texts._package[language]}<p>{pack.name}</p></div>
+          <div className="extra flex_b_c"><div>{texts.income[language]} </div> <p className="amount">{newDeposit && formatNum(parseFloat(newDeposit.income).toFixed(2) || "__")} MZN</p></div>
+          <div className="extra flex_b_c">{texts.fullRefund[language]} <p className="amount">{newDeposit &&  formatNum(parseFloat(newDeposit.totalIncome).toFixed(2)) || "__ "} MZN</p></div>
+          <div className="extra flex_b_c">{texts.returnDay[language]}<p>{newDeposit && formatDate(newDeposit.expireAt, language).fullDate || "__ "}<span></span></p></div>
           <div className="input_card">
             <button disabled={states.loading} className="btns main_btns">{states.loading && <MinLoder/> || texts._continue[language]}</button>
           </div>
           </form>
+          
           {states.stage === 3 && !gateways && <Loader language={language}/> ||
           <form className={states.stage === 3 && "active newDepositForms" || "newDepositForms"} onSubmit={handleSubmit}>
             <div className="container-gateways flex_wrap">
@@ -253,7 +315,7 @@ const NewWithdrawal =({language})=>{
                   <div className="i-radio-card flex_c_c">
                     <h5>{g.name}</h5>
                     <div className="radio-img-wrap">
-                      <img className="radio-img" src={g.avatar.src} alt={g.id}/>
+                      <img className="radio-img" src={g.avatar && g.avatar.src} alt={g.id}/>
                     </div>
                   </div>
                 </label>
@@ -265,18 +327,15 @@ const NewWithdrawal =({language})=>{
               <div  className="input_right_box flex_c_c">258</div>
               <input disabled={states.loading} name="account" value={datas.account} onChange={handleChange} onFocus={handleClearError} type="number" className={`${chackeVal(datas.account, "input")} accountnumber`}/>
               <label htmlFor="tel">{texts.accountNumberTitle[language]}</label>
-                {myPaymentMethods && myPaymentMethods.length > 0 && <div onClick={handleToggle} className="input_left_box flex_c_c">
-                  <i style={{transform:`rotate(${states.toggle && 180||0}deg)`}} className="bi bi-chevron-down dropdownIcon"></i>
-                  {states.toggle && <div className="paymentmethodList">
-                    <div className="paymentmethodCard a_conatiner">
-                      <div className="p_body">
-                        {myPaymentMethods.map(elem=>(
-                        <div onClick={()=>setDatas(prevData=>({...prevData,gateway:elem.gateway,account:elem.account}))} key={elem.id} className="list">{elem.account}</div>
-                        ))}
-                      </div>
-                    </div>
+              {myPaymentMethods && myPaymentMethods.length > 0 && <div onClick={handleToggle} className="input_left_box flex_c_c">
+                <i style={{transform:`rotate(${states.toggle && 180||0}deg)`}} className="bi bi-chevron-down dropdownIcon"></i>
+                {states.toggle &&
+                  <div style={{display:states.toggle && "inline" || "none"}} className="a_c_menu a_conatiner br4-a">
+                    {myPaymentMethods.map(elem=>(
+                      <div onClick={()=>setDatas(prevData=>({...prevData,gateway:elem.gateway,account:elem.account}))} key={elem.id} className={`${elem.account === datas.account && "active"} pdd6_10 flex_s_c`}>{elem.account}</div>
+                    ))}
                   </div>
-               || null}
+                }
               </div>}
             </div>
             <div className="label_error"> {error && error.account}</div>
@@ -286,14 +345,14 @@ const NewWithdrawal =({language})=>{
             <input disabled={states.loading} checked={datas.saveAccount} onChange={()=>setDatas(prevData=>({...prevData,saveAccount:!datas.saveAccount}))} type="checkbox" name="savethisAccount" className={`inputs ${language}`}/>
           </div>: ""}
           <div className="input_card">
-            <button disabled={states.loading} className="btns main_btns">{states.loading && <MinLoder/> || texts._continue[language]}</button>
+            <button disabled={states.loading } className="btns main_btns">{states.loading && <MinLoder/> || texts._continue[language]}</button>
           </div>
         </form>
-        }
+          }
         </div>
       </div>
     </div>
   );
 }
 
-export default NewWithdrawal;
+export default NewDeposit;
