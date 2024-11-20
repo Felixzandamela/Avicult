@@ -38,7 +38,6 @@ const SignUp =({language})=>{
     }
   }
   
-  
   async function handleSignUp(){
     try{
       const res = await signUp(datas.email,datas.password);
@@ -80,6 +79,7 @@ const SignUp =({language})=>{
           dbChats.child(response.uid).set({
             id:response.uid,
             owner:response.uid,
+            participants:[response.uid],
             chatColor:getColor(),
             data:""
           }).then(()=>{
@@ -103,11 +103,9 @@ const SignUp =({language})=>{
                 }
               }).then(()=>{
                 localStorage.setItem("upline","");
-                setStates(prevState=>({...prevState,loading:false}));
+                sendEmailVerification(response);
               }).catch((error)=>{setError(prevError=>({...prevError,error:{text:error.message,stack:"error"}}));});
-            }else{
-              setStates(prevState=>({...prevState,loading:false}));
-            } 
+            }else{sendEmailVerification(response);} 
           }).catch((error)=>{
             setError(prevError=>({...prevError,error:{text:error.message,stack:"error"}}));
           });
@@ -127,6 +125,17 @@ const SignUp =({language})=>{
         }
       }
     }
+  }
+  const sendEmailVerification = (currentUser)=>{
+    currentUser.sendEmailVerification().then(()=>{
+      navigateTo("success","email-verification","successfuly registered");
+    });
+  }
+
+  const navigateTo = (stack,reason,error)=>{
+    setStates(prevState=>({...prevState,loading:false}));
+    console.log(error);
+    navigate(`/message?type=${stack}&field=register&reason=${reason ? reason : ""}`,{replace:true});
   }
   
   const handleClearError = (event)=>{
