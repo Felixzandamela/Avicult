@@ -58,25 +58,29 @@ export function signOut(){
   return auth.signOut();
 }
 
-export const currentUser = async (e) => {
-  try {
-    let user;
-    const snapUser = await dbUsers.child(e.id).once('value');
-    if (snapUser.exists()) {
-      let userData = snapUser.val();
-      if (e.avatar) {
-        const snapImg = await dbImages.child(e.id).once("value");
-        if (snapImg.exists()) {
-          userData.avatar = snapImg.val().src;
-        }
-      }
-      user = userData;
-      return user;
-    } else {
-      throw new Error('User does not exist');
-    }
-  } catch (error) {
-    console.error(error);
-    return null;
+export const currentUser = (a)=>{
+  const current = useAuth();
+  const [userDatas, setUserDatas] = useState({});
+  const hendleUser = (snapChat)=>{
+    const user = snapChat.val();
+    if(a){
+      dbImages.child(user.id).on("value",(snapImg)=>{
+        if(snapImg.exists()){
+          user.avatar = snapImg.val().src;
+          setUserDatas(user);
+        }else{setUserDatas(user);}
+      });
+    }else{setUserDatas(user);}
   }
+  useEffect(()=>{
+    if(current){
+     dbUsers.child(current.uid).on('value', hendleUser);
+    }
+    return()=>{
+      if(current){
+        dbUsers.child(current.uid).off('value', hendleUser)
+      }
+    }
+  },[current]);
+  return userDatas;
 }
