@@ -63,7 +63,7 @@ export function signOut(){
 
 export const currentUser = (a)=>{
   const current = useAuth();
-  const [userDatas, setUserDatas] = useState({});
+  const [userDatas, setUserDatas] = useState(null);
   const hendleUser = (snapChat)=>{
     const user = snapChat.val();
     if(a){
