@@ -1,4 +1,5 @@
 import React,{useEffect, useState} from 'react';
+import {useNavigate} from "react-router-dom";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/4.3.1/firebase.js"
 import {getCurrentTime,getYearlyChartdatas,formatDate,ThisWeek,Percentage} from "../Utils";
 const firebaseConfig = {
@@ -28,12 +29,14 @@ export const dbNotifications = firebase.database().ref('/datas/notifications');
 export const dbImages = firebase.database().ref('/datas/images');
 
 export function useAuth(){
+  const navigate = useNavigate();
   const [newUser,setNewUser] = useState(null);
   useEffect(() =>{
     const isAuthticated = auth.onAuthStateChanged (user => {
       setNewUser(user);
       let a = user ? user.uid : "";
       localStorage.setItem("isAuthenticated", a);
+      if(!user.emailVerified){navigate(`/message?type=error&field=register&reason=email-verification`,{replace:true});}
     });
     return isAuthticated;
   }, []);
