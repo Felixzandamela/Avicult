@@ -12,7 +12,8 @@ const Layout = ({props, mode, onChanges}) =>{
   const navigate = useNavigate();
   const isAuth = useAuth();
   const isMounted = useRef(true);
-  const [datas,setDatas]=useState(null);
+  const datas = currentUser(true);
+ // const [datas,setDatas]=useState(null);
   const [states, setStates]=useState({
     openAside:false,openProfile:false, searchs:null,
     openNotifications:false, notifications:null,loading:false,
@@ -20,13 +21,7 @@ const Layout = ({props, mode, onChanges}) =>{
   const [error,setError] = useState(null);
   const [fileName, setFileName,clearFileName] = useFileName(null);
 
-  useEffect(()=>{
-    const getUser = async (e)=>{
-      try{let d = await currentUser(e); setDatas(d);
-      }catch(error){console.log(error);}
-    }
-    if(isAuth){getUser({id:isAuth.uid,avatar:true});}
-  },[isAuth]);
+  
   
   const menuList = {
     languages: [
@@ -196,7 +191,7 @@ const Layout = ({props, mode, onChanges}) =>{
               <div className="balance-card-o">
                 <div className="a_balance-card">
                   <div className="title">{texts.balanceAvailable[props.language]}</div>
-                  <p>MZN {datas && formatNum(datas.balance) }</p>
+                  <p>MZN {datas && datas.balance && parseFloat(formatNum(datas.balance)).toFixed(2) || 0.00 }</p>
                 </div>
               </div>
               <div className="a_prof_box">
@@ -237,7 +232,7 @@ const Layout = ({props, mode, onChanges}) =>{
                   <div className="">
                     <p>{texts.ProfileID[props.language]}</p>
                     <div className="a_activity_p flex_b_c">
-                      <div className="pdd10-r">{datas && datas.id}</div>
+                      <div>{datas && datas.id}</div>
                       {datas && <div className="pdd10-l"><ShareLink language={props.language} value={datas.id}/></div>}
                     </div>
                   </div>
