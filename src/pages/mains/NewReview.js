@@ -1,23 +1,24 @@
 import React,{useState,useEffect,useRef} from "react";
 import {useNavigate,Link} from 'react-router-dom';
 import {texts} from "../texts/Texts";
-import {dbReviews,currentUser} from '../auth/FirebaseConfig';
+import {dbReviews,useAuth,currentUser} from '../auth/FirebaseConfig';
 import {chackeVal,Avatar,getCurrentTime, MinLoder} from "../Utils";
 
 const getINegativeWords = (text)=>{
   const negativeWords  = ['ladrões','burla','burlado','burlando','burlada','burl@r','burl@r', 'burlar', 'burlão', 'burlista', 'burlador', 'burlável', 'burlas', 'burlões', 'burlistas', 'burladores', 'burláveis'];
+
   const arryOfNegativeWords = new RegExp("(" + negativeWords.join("|") + ")", "ig");
   return text.match(arryOfNegativeWords);
 }
 
 const MAX_STARS = 5;
-const isAuthenticated = localStorage.getItem("isAuthenticated");
 const NewReview = ({language}) =>{
+  const isAuth = useAuth();
   const color = localStorage.getItem('avatarColor');
   const navigate = useNavigate();
   const isMounted = useRef(true); 
   const [loading,setLoading]= useState(false);
-  const [user, setUser]= useState(null);
+  const user = currentUser(true);
   const [datas,setDatas]=useState({
     owner:null,
     stars:0,
@@ -38,8 +39,8 @@ const NewReview = ({language}) =>{
  };
  
  useEffect(()=>{
-    if(isAuthenticated){
-      dbReviews.child(isAuthenticated).on('value', (snapChat)=>{
+    if(isAuth){
+      dbReviews.child(isAuth.uid).on('value', (snapChat)=>{
         let review = snapChat.val();
         setDatas(prevData=>({...prevData,
           owner:review.owner,
@@ -50,16 +51,7 @@ const NewReview = ({language}) =>{
         }));
       });
     }
-  },[isAuthenticated]);
-  
-  useEffect(()=>{
-    const getUser = async (e)=>{
-      try{let d = await currentUser(e); setUser(d);
-      }catch(error){console.log(error);}
-    }
-    
-    if(isAuthenticated && isMounted.current){getUser({id:isAuthenticated,avatar:true});}
-  },[isAuthenticated]);
+  },[isAuth]);
   
   useEffect(()=>{
     setDatas(prevData=>({...prevData,revised:!getINegativeWords(datas.text)}))
@@ -90,7 +82,7 @@ const NewReview = ({language}) =>{
   
   async function handlePublicReview(){
     try{
-      dbReviews.child(isAuthenticated).set(datas);
+      dbReviews.child(isAuth.uid).set(datas);
     }catch(error){
       console.log(error);
     }finally{
