@@ -89,7 +89,7 @@ const Transaction = ({language,mode})=>{
               <p className={datas && datas.status}>{datas && texts[datas.status][language]}</p>
             </div>
           </div>
-          <div className="flex_b_c"><svg onClick={()=>navigate(-1, {replace:true})} className="a_aside_close" fill="currentColor" opacity="1.0" baseProfile="full" width="24" height="24" viewBox="0 0 24.00 24.00"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg></div>
+          <div className="flex_b_c"><svg onClick={()=>navigate(-1, {replace:true})} fill="currentColor" opacity="1.0" baseProfile="full" width="24" height="24" viewBox="0 0 24.00 24.00"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg></div>
         </div>
         {isLoading && <Loader language={language}/>||<div>
           {datas && typeof datas !== "object" && <EmptyCard language={language}/>|| <TransactionCard language={language} datas={datas} mode={mode} type={type} newType={newType}/>}
