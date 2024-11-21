@@ -52,7 +52,7 @@ const SignUp =({language})=>{
         upline: upline ? upline : "",
         isBanned:false,
         phoneNumber:"",
-        alreadDeposited:false,
+        online:"",
         location:datas.location,
         date:getCurrentTime().fullDate
       }
