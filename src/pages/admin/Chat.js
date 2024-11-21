@@ -1,29 +1,40 @@
 import React,{useState, useEffect,useRef} from "react";
 import {Link,useNavigate, Outlet, NavLink,useParams} from "react-router-dom";
 import {texts} from "../texts/Texts";
-import {Avatar,Alert,ShareLink,MinLoder,formatDate,getCurrentTime,idGenerator, getColor, Toast,useFileName} from "../Utils";
-import {currentUser, dbChats, dbUsers,dbImages} from '../auth/FirebaseConfig';
+import {Avatar,Alert,ShareLink,MinLoder,formatDate,getCurrentTime,idGenerator, getColor,EmptyCard,Loader, Toast,useFileName} from "../Utils";
+import {currentUser, useAuth, dbChats, dbUsers,dbImages} from '../auth/FirebaseConfig';
 import {getChats} from "../auth/FetchDatas";
 import {ImageViewer,ImageCropper} from "../modals/ImageTools";
 
-const isAuthenticated = localStorage.getItem("isAuthenticated");
 const Chat = ({language})=>{
   const {id} = useParams();
-  const chatId = id || isAuthenticated;
+  const isAuth = useAuth();
+  const user = currentUser(false);
+  const searchParams = new URLSearchParams(window.location.search);
+  const params = Object.fromEntries(searchParams.entries());
+  const {mode} = params;
   const navigate = useNavigate();
   
   const isMounted = useRef(true);
   const bottom = useRef(null);
   const textarea = useRef(null);
   const containHtml = /<|>|<[a-z][\s\S]*>/i;
+  const [chatId,setChatId] = useState(null);
   const [fileName, setFileName,clearFileName] = useFileName(null);
-  const [states,setStates] = useState({loading:false,images:null, actions:null,index:null});
+  const [states,setStates] = useState({loading:false,isLoading:false,images:null, actions:null,index:null});
   const [alertDatas, setAlertDatas] = useState(null);
   const [datas, setDatas] = useState(null);
   const [chat, setChat]= useState(null);
   const [error,setError]=useState({ error:{text:null,stack:null}});
   const [values, setValues]=useState({text:"",images:[]});
   const [newMsg,setNewMsg] = useState(null);
+  
+  useEffect(()=>{
+    setStates(prevState=>({...prevState,isLoading:true}));
+    if(id){setChatId(id);}else{
+      if(isAuth && isAuth.uid){setChatId(isAuth.uid);}
+    }
+  },[id,isAuth]);
   
   /*
 * Este trecho de código inclui um hook useEffect que é executado sempre que 'datas' ou 'current' mudam.
@@ -35,43 +46,72 @@ const Chat = ({language})=>{
   //carregando dados do chat
   useEffect(() => {
     const handleChatAdded = snapChat => {
-      const newChat = snapChat.val();
+      if(snapChat.exists()){
+        const newChat = snapChat.val();
+        if(isAuth){
+          const participant = newChat.participants.filter((item)=>{return item === isAuth.uid});
+          if(participant.length <=0){
+            dbChats.child(newChat.id).child('participants').transaction((currentParticipants) => {
+              currentParticipants.push(isAuth.uid);
+              return currentParticipants;
+            }).then(()=>{handleNewChat(newChat);}).catch(()=>{setError(prevError=>({...prevError,error:{text:error.message,stack:"error"}}));});
+          }else{handleNewChat(newChat);}
+        }
+      }else{navigate(-1,{replace:true});}
+    }
+    const handleNewChat = (newChat)=>{
       const promises = [];
-      // funcao auxiliar para obter imagem
       const getImage = (imageId) => {
         return new Promise((resolve, reject) => {
           dbImages.child(imageId).on("value", (snapImages) => {
-            if (snapImages.exists()) {
-              resolve(snapImages.val());
-            } else {
-              resolve(null);
-            }
+            resolve(snapImages.val());
           });
         });
       };
-      
-      dbUsers.child(chatId).on('value', (snapUser) => {
-        newChat.owner = snapUser.val();
-        let type = [];
-        if (typeof newChat.data === "object") {
+      const participants = {};
+      const participantsPromises = newChat.participants.map(participantsId => {
+        return new Promise((resolve, reject) => {
+          dbUsers.child(participantsId).on("value", (snapUser) => {
+            const participant = snapUser.val();
+            if(participant){
+              dbImages.child(participantsId).on("value",(snapAvatar)=>{
+                const avatarData = snapAvatar.val();
+                if(avatarData !== null){
+                  participant.avatar = avatarData.src;
+                  participants[participantsId] = participant;
+                }
+                resolve();
+              });
+            } else {resolve();}
+          });
+        });
+      });
+      Promise.all(participantsPromises).then(() => {
+        let ownerId = newChat.owner;
+        newChat.owner = participants[ownerId];
+        if(typeof newChat.data === "object") {
           for (let k in newChat.data) {
-            dbUsers.child(newChat.data[k].autor).on("value", (snapAutor) => {
-              newChat.data[k].autor = snapAutor.val();
-            });
-            let imagesId = typeof newChat.data[k].msg.images !== "object" ? newChat.data[k].msg.images !== "" ? newChat.data[k].msg.images : "" : newChat.data[k].msg.images.id;
-            if (imagesId !== "") {
-              promises.push(getImage(imagesId).then((imageData) => {
-                newChat.data[k].msg.images = imageData;
-              }));
+            if (participants[newChat.data[k].autor]) {
+              newChat.data[k].autor = participants[newChat.data[k].autor];
+              let imagesId = typeof newChat.data[k].msg.images !== "object" ? (newChat.data[k].msg.images !== "" ? newChat.data[k].msg.images : "") : newChat.data[k].msg.images.id;
+              if (imagesId !== "") {
+                promises.push(getImage(imagesId).then((imageData) => {
+                  newChat.data[k].msg.images = imageData;
+                }));
+              }
             }
           }
+        }else{
+          newChat.data = [];
+          setDatas(newChat);
         }
         Promise.all(promises).then(() => {
+          setStates(prevState=>({...prevState,isLoading:false}));
           setDatas(newChat);
         });
       });
     };
-    if (chatId) {
+    if (chatId && isAuth) {
       dbChats.child(chatId).on("value", handleChatAdded);
       dbChats.child(chatId).on("child_changed", () => {
         setDatas(null);
@@ -85,10 +125,10 @@ const Chat = ({language})=>{
         dbChats.child(chatId).off("value", handleChatAdded);
       }
     };
-  }, [chatId]);
+  }, [chatId,isAuth]);
   
   useEffect(()=>{
-    if(datas && datas.data && isAuthenticated){
+    if(datas && datas.data && isAuth){
       const index = 0;
       // Reduzir mensagens semelhantes
       const newData =  datas.data.reduce((acc, item,id) => {
@@ -113,14 +153,14 @@ const Chat = ({language})=>{
       // Marcar mensagens não visualizadas como visualizadas
       let noSeens = [];
       for(let k in datas.data){
-        if(!datas.data[k].seen && datas.data[k].autor.id !== isAuthenticated){
+        if(isAuth && !datas.data[k].seen && datas.data[k].autor.id !== isAuth.uid){
           dbChats.child(datas.id).child("data").child(k).update({
             seen: true
           });
         }
       }
     }
-  },[datas,isAuthenticated]);
+  },[datas,isAuth]);
   
   //Assim que os dados de chat forem carregados, rola para baixo  
   useEffect(()=>{
@@ -163,11 +203,14 @@ const Chat = ({language})=>{
   
   //Carregar dados da nova mensagem assim que for digitado
   useEffect(()=>{
-    if(isAuthenticated){
-      const sendNewMsg = new NewMessage(chatId, isAuthenticated);
-      setNewMsg(sendNewMsg);
+    if(isAuth){
+      let nId = isAuth ? isAuth.uid : null;
+      if(nId){
+        const sendNewMsg = new NewMessage(chatId, nId);
+        setNewMsg(sendNewMsg);
+      }
     }
-  },[values, chatId, isAuthenticated]);
+  },[values, chatId, isAuth]);
   
   //Ação para verificar valores e enviar uma nova mensagem assim que atender os requisitos
   const handleSubmit=(event) => {
@@ -175,7 +218,8 @@ const Chat = ({language})=>{
     event.preventDefault();
     if(values.text.length <= 0 && values.images.length <=0){errors.push(1);}
     if(values.text.match(containHtml)){setError(prevError=>({...prevError,error:{text:texts.containHtml[language],stack:"error"}}));errors.push(1);}
-    if(!errors.length > 0){setStates(prevState=>({...prevState,loading:true}));handleSend();}
+    if(!errors.length > 0){setStates(prevState=>({...prevState,loading:true}));
+    handleSend();}
   }
   
   const handleSaveAvatar = (e)=>{
@@ -194,7 +238,7 @@ const Chat = ({language})=>{
       });
     } 
   }
-
+  
   const handleSend = () => {
     if (newMsg) {
       const newImages = {
@@ -222,6 +266,7 @@ const Chat = ({language})=>{
         console.log("Mensagem enviada com sucesso");
       }).catch((error) => {
         setStates(prevState=>({...prevState,loading:false}));
+        setError(prevError=>({...prevError,error:{text:error.message,stack:"error"}}));
         console.error("Erro ao enviar mensagem:", error);
       });
     }
@@ -275,13 +320,9 @@ const Chat = ({language})=>{
       setChat(null);
       for(let f in datas.data){
         let imagesId = datas.data[f].msg.images && datas.data[f].msg.images.id !== undefined ? datas.data[f].msg.images.id : null;
-        if(imagesId !== null){
-          removeImage(imagesId);
-        }
+        if(imagesId !== null){removeImage(imagesId);}
       }
-      dbChats.child(chatId).child('data').transaction((currentMessages) => {
-        return "";
-      }).then(()=>{
+      dbChats.child(chatId).child('data').transaction((currentMessages) => {return "";}).then(()=>{
         setAlertDatas(null);
         setError(prevError=>({...prevError,error:{text:texts.chatClearedCuccessfully[language],stack:"success"}}));
       }).catch((error)=>{
@@ -304,7 +345,7 @@ const Chat = ({language})=>{
     });
   }// scrollIntoView last message
   const color = localStorage.getItem('avatarColor');
-  const header = datas && datas.owner.id !== isAuthenticated? datas.owner : support ;
+  const header = datas && isAuth && datas.owner.id !==  isAuth.uid? datas.owner : support ;
   const MAX_DISPLAY = 5, maxDisplay = 4;
   const setImages = (e)=>{
     setStates(prevState=>({...prevState,images:e}));
@@ -347,7 +388,7 @@ const Chat = ({language})=>{
           </div>
           <div className="flex_s">
             <div onClick={scrollToBottom} className="a_chat_avatar">
-              {datas &&  <Avatar avatar={header} color={datas.chatColor}/>}
+              {datas &&  <Avatar avatar={header} color={datas && datas.chatColor}/>}
             </div>
             <div className="a_chat_mames">
               <h1 className="ellipsis">{header && header.name}</h1>
@@ -360,18 +401,34 @@ const Chat = ({language})=>{
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-three-dots-vertical" viewBox="0 0 16 16">
               <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0"/>
             </svg>
-            <div className="a_c_menu a_conatiner br4-a">
-              <div className="pdd6_10 flex_s_c" onClick={()=>handleClear("all")}>{texts.clearThisConversation[language]}</div>
-            </div>
+            {mode === "admin" &&
+              <div className="a_c_menu a_conatiner br4-a">
+                <div className="pdd6_10 flex_s_c" onClick={()=>handleClear("all")}><i className="bi bi-trash3"></i><p className="ellipsis">{texts.clearThisConversation[language]}</p></div>
+                <Link to={`/admin/transactions/deposits?owner=${chatId}&id=`} className="a pdd6_10 flex_s_c"> <i className="bi bi-box-arrow-in-up"></i>{texts.deposits[language]}</Link>
+                <Link to={`/admin/transactions/withdrawals?owner=${chatId}&id=`} className="a pdd6_10 flex_s_c"> <i className="bi bi-box-arrow-down"></i>{texts.withdrawals[language]}</Link>
+                <Link to={`/admin/transactions/commissions?owner=${chatId}&id=`} className="a pdd6_10 flex_s_c"> <i className="bi bi-link-45deg"></i>{texts.commissions[language]}</Link>
+                <Link to={`/admin/users?id=${chatId}`} className="a pdd6_10 flex_s_c"> <i className="bi bi-person"></i> <p className="ellipsis">{texts.viewProfile[language]}</p></Link>
+              </div>||
+              <div className="a_c_menu a_conatiner br4-a">
+                <div className="pdd6_10 flex_s_c" onClick={()=>handleClear("all")}><i className="bi bi-trash3"></i><p className="ellipsis">{texts.clearThisConversation[language]}</p></div>
+              </div>
+            }
           </div>}
         </div>
       </div>
       }
       
       <div className="a_chat_roller a_scroll_bar">
+        {states.isLoading && <Loader language={language}/> ||
+          <div>
+            {chat && chat.length <= 0 &&
+            <EmptyCard language={language}/>
+            }
+          </div>
+        }
         {chat && chat.map((item, n) =>(
           <div key={idGenerator(80)}>
-            {item.autor.id === isAuthenticated &&
+            {isAuth && item.autor.id === isAuth.uid &&
               <div key={idGenerator(70)} className="messageCard mset flex_e">
                 <div className="messages">
                   {item.messages.map(message=>(
@@ -403,7 +460,7 @@ const Chat = ({language})=>{
               </div>
               ||<div key={idGenerator()} className="messageCard receved flex_s">
                 <div className="a_msg_avatar">
-                  <Avatar avatar={item.autor} color={datas.chatColor}/>
+                 <Avatar avatar={item.autor} color={datas.chatColor}/>
                 </div>
                 <div className="messages flex_e">
                   {item.messages.map((message)=>(
