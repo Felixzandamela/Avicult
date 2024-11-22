@@ -48,7 +48,7 @@ const SignUp =({language})=>{
         name: datas.name,
         avatar:"",
         email: datas.email,
-        isAdmin: true,
+        isAdmin: false,
         upline: upline ? upline : "",
         isBanned:false,
         phoneNumber:"",
@@ -79,7 +79,13 @@ const SignUp =({language})=>{
           dbChats.child(response.uid).set({
             id:response.uid,
             owner:response.uid,
-            participants:[response.uid],
+            participants:{
+              [response.uid]:{
+                typing:false,
+                blocked:false,
+                datas:"",
+              }
+            },
             chatColor:getColor(),
             data:""
           }).then(()=>{
