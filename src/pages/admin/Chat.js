@@ -28,6 +28,7 @@ const Chat = ({language})=>{
   const [error,setError]=useState({ error:{text:null,stack:null}});
   const [values, setValues]=useState({text:"",images:[]});
   const [newMsg,setNewMsg] = useState(null);
+  const [header,setHeader] = useState(null);
   
   useEffect(()=>{
     setStates(prevState=>({...prevState,isLoading:true}));
@@ -42,18 +43,20 @@ const Chat = ({language})=>{
 * Em seguida, atualiza o estado do chat com os novos dados processados.
 * Também verifica mensagens não visualizadas e as marca como visualizadas.
 */
-
+  const isPropertyDefined = (obj, property) => {
+    return obj !== undefined && obj[property] !== undefined;
+  };
   //carregando dados do chat
   useEffect(() => {
     const handleChatAdded = snapChat => {
       if(snapChat.exists()){
         const newChat = snapChat.val();
         if(isAuth){
-          const participant = newChat.participants.filter((item)=>{return item === isAuth.uid});
-          if(participant.length <=0){
-            dbChats.child(newChat.id).child('participants').transaction((currentParticipants) => {
-              currentParticipants.push(isAuth.uid);
-              return currentParticipants;
+          if(!isPropertyDefined(newChat.participants, isAuth.uid)){
+            dbChats.child(newChat.id).child('participants').child(isAuth.uid).set({
+              typing:false,
+              blocked:false,
+              datas:""
             }).then(()=>{handleNewChat(newChat);}).catch(()=>{setError(prevError=>({...prevError,error:{text:error.message,stack:"error"}}));});
           }else{handleNewChat(newChat);}
         }
@@ -69,26 +72,26 @@ const Chat = ({language})=>{
         });
       };
       const participants = {};
-      const participantsPromises = newChat.participants.map(participantsId => {
+      const participantsPropertyNames = Object.getOwnPropertyNames(newChat.participants);
+      const participantsPromises = participantsPropertyNames.map(participantId => {
         return new Promise((resolve, reject) => {
-          dbUsers.child(participantsId).on("value", (snapUser) => {
+          dbUsers.child(participantId).on("value", (snapUser) => {
             const participant = snapUser.val();
             if(participant){
-              dbImages.child(participantsId).on("value",(snapAvatar)=>{
+              dbImages.child(participantId).on("value",(snapAvatar)=>{
                 const avatarData = snapAvatar.val();
                 if(avatarData !== null){
                   participant.avatar = avatarData.src;
-                  participants[participantsId] = participant;
+                  participants[participantId] = participant;
+                  newChat.participants[participantId].datas = participant;
                 }
                 resolve();
               });
             } else {resolve();}
           });
         });
-      });
+      }); //resolve participant datas
       Promise.all(participantsPromises).then(() => {
-        let ownerId = newChat.owner;
-        newChat.owner = participants[ownerId];
         if(typeof newChat.data === "object") {
           for (let k in newChat.data) {
             if (participants[newChat.data[k].autor]) {
@@ -100,7 +103,7 @@ const Chat = ({language})=>{
                 }));
               }
             }
-          }
+          } // set aurors  datas
         }else{
           newChat.data = [];
           setDatas(newChat);
@@ -131,7 +134,7 @@ const Chat = ({language})=>{
     if(datas && datas.data && isAuth){
       const index = 0;
       // Reduzir mensagens semelhantes
-      const newData =  datas.data.reduce((acc, item,id) => {
+      const newData = datas.data.reduce((acc, item,id) => {
         const index = acc.findIndex(el => formatDate(el.time,language).minutesLength === formatDate(item.time,language).minutesLength && el.autor.id === item.autor.id);
         item.msg["position"] = id;
         item.msg["id"] = item.id;
@@ -148,7 +151,6 @@ const Chat = ({language})=>{
         }
         return acc;
       }, []);
-      // Atualizar estado do chat
       setChat((prevState)=>(prevState === newData? null:newData));
       // Marcar mensagens não visualizadas como visualizadas
       let noSeens = [];
@@ -159,17 +161,42 @@ const Chat = ({language})=>{
           });
         }
       }
-    }
+      const support = {
+        typing:false,
+        blocked:false,
+        datas:{avatar:"",name: "Support", online:"online"}
+      }
+      const messagesReversed = datas.data.reverse();
+      const senders = Object.values(datas.participants);
+      if(messagesReversed.length <= 0){
+        if(senders.length > 1){
+          setHeader(senders[senders.length - 1])
+        }else{
+          setHeader(support);
+        }
+      }else{
+        for(let n in messagesReversed){
+          if(messagesReversed[n].autor.id !== isAuth.uid){
+            datas.owner = datas.participants[messagesReversed[n].autor.id];
+            setHeader(datas.owner);
+            break;
+          }
+          if(n <= 0 && messagesReversed[n].autor.id === isAuth.uid){
+            setHeader(support);
+          }
+        }
+      }
+    } // set header datas from current sender 
   },[datas,isAuth]);
-  
   //Assim que os dados de chat forem carregados, rola para baixo  
   useEffect(()=>{
-    if(chat){
-      setTimeout(()=>{
-        if(isMounted.current){
-          scrollToBottom();
-        }
-      },1000);
+    const timeout = setTimeout(()=>{
+      if(isMounted.current && chat){
+        scrollToBottom();
+      }
+    },1000);
+    return ()=>{
+      clearTimeout(timeout);
     }
   },[chat]);
   
@@ -210,6 +237,7 @@ const Chat = ({language})=>{
         setNewMsg(sendNewMsg);
       }
     }
+    textarea.current.addEventListener('blur', function() {onTyping(false);});
   },[values, chatId, isAuth]);
   
   //Ação para verificar valores e enviar uma nova mensagem assim que atender os requisitos
@@ -237,7 +265,12 @@ const Chat = ({language})=>{
         console.log(error);
       });
     } 
-  }
+  } // add new images message
+  
+  const removeImage =(e)=>{
+    const id = typeof e === "object" ? e.id : e;
+    if(id){dbImages.child(id).remove().catch((error)=>{console.log(error);});}
+  }// remove images of messages
   
   const handleSend = () => {
     if (newMsg) {
@@ -270,7 +303,7 @@ const Chat = ({language})=>{
         console.error("Erro ao enviar mensagem:", error);
       });
     }
-  };
+  }; // sending message event
   
   const handleClear = (e)=>{
     const alertData = {
@@ -286,21 +319,12 @@ const Chat = ({language})=>{
       }
     }
     setAlertDatas(alertData);
-  }
+  }// set new alert actions
   
   const handleCancel = () =>{
     setAlertDatas(null);
     setStates(prevState=>({...prevState,actions:null,index:null}));
-  }
-  
-  const removeImage =(e)=>{
-    const id = typeof e === "object" ? e.id : e;
-    if(id){
-      dbImages.child(id).remove().catch((error)=>{
-        console.log(error);
-      });
-    }
-  }
+  }// cansel alert eventListener
   
   const handleAction =(event)=>{
     if(states.actions && event === "single"){
@@ -331,11 +355,18 @@ const Chat = ({language})=>{
       });
     }
   }
+  /* delete messages
+  **single - delete one message
+  */
   
-  const support = {
-    avatar:"",
-    name: "Support",
-  }
+  const onTyping = (t) =>{
+    if(isAuth && isMounted.current && isAuth.uid !== null){
+      dbChats.child(chatId).child("participants").child(isAuth.uid).child("typing").transaction((typing)=>{
+        typing = t;
+        return typing;
+      }).catch((error)=>{console.log(error)});
+    }
+  }// typing eventListener
   
   function scrollToBottom(){
     bottom.current.scrollIntoView({
@@ -345,7 +376,6 @@ const Chat = ({language})=>{
     });
   }// scrollIntoView last message
   const color = localStorage.getItem('avatarColor');
-  const header = datas && isAuth && datas.owner.id !==  isAuth.uid? datas.owner : support ;
   const MAX_DISPLAY = 5, maxDisplay = 4;
   const setImages = (e)=>{
     setStates(prevState=>({...prevState,images:e}));
@@ -363,17 +393,17 @@ const Chat = ({language})=>{
       
       {states.actions && <div className="a_chat_header flex_b_c">
         <div className="flex_b_c">
-          <div onClick={()=>setStates(prevState=>({...prevState,actions:null,index:null}))} className="flex_c_c btn_circle"> 
+          <div onClick={()=>setStates(prevState=>({...prevState,actions:null,index:null}))} className="flex_c_c btn_circle br60"> 
             <svg className="" fill="currentColor" opacity="1.0" baseProfile="full" width="24" height="24" viewBox="0 0 24.00 24.00">
               <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
             </svg>
           </div>
         </div>
         <div className="flex_c_c">
-          <div style={{marginRight:"20px"}} className="btn_circle flex_c_c">
+          <div style={{marginRight:"20px"}} className="btn_circle br60 flex_c_c">
             <ShareLink language={language} value={states.actions.text}/>
           </div>
-          <div onClick={()=>handleClear("single")} className="btn_circle flex_c_c">
+          <div onClick={()=>handleClear("single")} className="btn_circle br60 flex_c_c">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" className="bi bi-trash3" viewBox="0 0 16 16">
               <path d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5M11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H1.5a.5.5 0 0 0 0 1h.538l.853 10.66A2 2 0 0 0 4.885 16h6.23a2 2 0 0 0 1.994-1.84l.853-10.66h.538a.5.5 0 0 0 0-1zm1.958 1-.846 10.58a1 1 0 0 1-.997.92h-6.23a1 1 0 0 1-.997-.92L3.042 3.5zm-7.487 1a.5.5 0 0 1 .528.47l.5 8.5a.5.5 0 0 1-.998.06L5 5.03a.5.5 0 0 1 .47-.53Zm5.058 0a.5.5 0 0 1 .47.53l-.5 8.5a.5.5 0 1 1-.998-.06l.5-8.5a.5.5 0 0 1 .528-.47M8 4.5a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5"/>
             </svg>
@@ -388,12 +418,16 @@ const Chat = ({language})=>{
           </div>
           <div className="flex_s">
             <div onClick={scrollToBottom} className="a_chat_avatar">
-              {datas &&  <Avatar avatar={header} color={datas && datas.chatColor}/>}
+              {header && <Avatar avatar={header.datas} color={datas && datas.chatColor}/>}
             </div>
-            <div className="a_chat_mames">
-              <h1 className="ellipsis">{header && header.name}</h1>
-              <span><i>online</i></span>
-            </div>
+             {header && <div className="a_chat_mames">
+              <h1 className="ellipsis">{header && header.datas.name}</h1>
+              <div className="a_sender_status"> {header && header.typing && <span style={{color:"var(--main-color)"}}> <i>{texts.typing[language]}</i></span> || 
+                <span>{header && typeof header.datas.online === "object" && `${texts.lastSeen[language]} ${formatDate(header.datas.online, language).timeAgo}` || header.datas.online}</span> 
+                }
+              
+              </div>
+            </div>}
           </div>
         </div>
         <div className="flex_c_c">
@@ -417,14 +451,9 @@ const Chat = ({language})=>{
         </div>
       </div>
       }
-      
       <div className="a_chat_roller a_scroll_bar">
         {states.isLoading && <Loader language={language}/> ||
-          <div>
-            {chat && chat.length <= 0 &&
-            <EmptyCard language={language}/>
-            }
-          </div>
+          <div>{chat && chat.length <= 0 &&<EmptyCard language={language}/>}</div>
         }
         {chat && chat.map((item, n) =>(
           <div key={idGenerator(80)}>
@@ -460,7 +489,8 @@ const Chat = ({language})=>{
               </div>
               ||<div key={idGenerator()} className="messageCard receved flex_s">
                 <div className="a_msg_avatar">
-                 <Avatar avatar={item.autor} color={datas.chatColor}/>
+                
+              {datas && <Avatar avatar={item.autor} color={datas.chatColor}/>}
                 </div>
                 <div className="messages flex_e">
                   {item.messages.map((message)=>(
@@ -514,7 +544,7 @@ const Chat = ({language})=>{
           <div className="flex_b_c">
             <ImageCropper language={language} mode={"chat"}  handleSaveAvatar={handleSaveAvatar} fileName={fileName} setFileName={setFileName} clearFileName={clearFileName}/>
             <div className="chat_texter">
-              <textarea ref={textarea} name="text" value={values.text} placeholder={texts.text[language]} rows="1" onChange={handleTextChange}></textarea>
+              <textarea ref={textarea} name="text" value={values.text} placeholder={texts.text[language]} rows="1" onChange={handleTextChange} onFocus={()=>onTyping(true)}></textarea>
             </div>
             <button disabled={states.loading} className="sender_btn"> 
               {states.loading && <MinLoder/> || <svg fill="currentColor" opacity="1.0" baseProfile="full" width="25" height="25" viewBox="0 0 24.00 24.00"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2 .01 7z"/></svg>}
