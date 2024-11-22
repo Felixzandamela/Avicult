@@ -1223,15 +1223,15 @@ input[type="checkbox"], input[type="radio"]{
   height: 50px;
 }
 .a_chat_header .a_chat_avatar{
-  margin-left: 10px;
+  margin-left: 2px;
 }
 .a_chat_mames h1{
   font-size: 0.9rem;
-  line-height: 1;
+  line-height: 1.2;
 }
 .a_chat_mames span{
-  font-size: 0.7rem;
-  line-height: 1.2;
+  font-size: 0.78rem;
+  line-height: 1.4;
 }
 
 
@@ -1385,15 +1385,18 @@ input[type="checkbox"], input[type="radio"]{
 
 .mset .msgbody{
   background:var(--main-color);
-  border-radius:  8px;
+  border-top-left-radius:12px;
+  border-bottom-left-radius:12px;
   float: right;
   margin-bottom:5px;
   color: #fff;
   align-self:  flex-end;
 }
+
 .receved .msgbody{
   background: #ddf;
-  border-radius: 8px;
+  border-top-right-radius:12px;
+  border-bottom-right-radius:12px;
   float: left;
   left: 0;
   position: relative;
@@ -1425,11 +1428,11 @@ input[type="checkbox"], input[type="radio"]{
   float: right;
   user-select: none;
   }
-.receved .msgbody:last-child {
-  border-radius: 8px 8px 8px 0;
+.receved .msgbody:first-child {
+  border-top-left-radius: 12px;
 }
-.mset .msgbody:last-child {
-  border-radius: 8px  8px 0 8px;
+.mset .msgbody:first-child {
+  border-top-right-radius: 12px;
 }
 .mset .msgbody:last-child:after, .receved .msgbody:last-child :after { 
   position: absolute;
@@ -1969,14 +1972,14 @@ background: transparent;
   background: #293042;
 }
 
-.a_c_menu div{
+.a_c_menu div, .a_c_menu .a{
   user-select: none;
   font-size: 0.85rem;
   font-weight: 400;
   position: relative;
   z-index: 11;
 }
-.a_c_menu div:first-child{
+.a_c_menu div:first-child,.a_c_menu .a:first-child{
   border-top-left-radius: 4px;
   -moz-border-radius-topleft: 4px;
   -webkit-border-top-left-radius: 4px;
@@ -1984,7 +1987,7 @@ background: transparent;
   -moz-border-radius-topright: 4px;
   -webkit-border-top-right-radius: 4px;
 }
-.a_c_menu div:last-child{
+.a_c_menu div:last-child, .a_c_menu .a:last-child{
   border-bottom-left-radius: 4px;
   -moz-border-radius-bottomleft: 4px;
   -webkit-border-bottom-left-radius: 4px;
@@ -1992,12 +1995,12 @@ background: transparent;
   -moz-border-radius-bottomright: 4px;
   -webkit-border-bottom-right-radius: 4px;
 }
-.a_c_menu div i{
+.a_c_menu div i,.a_c_menu .a i{
   margin-right: 10px;
   font-size: 0.9rem;
 }
 
-.a_c_menu div:hover{
+.a_c_menu div:hover,.a_c_menu .a:hover{
   background: rgba(var(--main-color-rgba),0.30);
 }
 .a_c_menu .active{
@@ -2038,9 +2041,7 @@ background: transparent;
 .image_swipper_center img{
   max-width:100%;
   height: auto;
-  object-fit: cover;
   max-height: calc(100% - 50px);
-  zoom: ;
 }
 .image_swipper_center{
   height: 100%;
