@@ -1,7 +1,7 @@
 import React, {useState,useEffect, useRef} from "react";
 import {useNavigate,useLocation,Outlet,Redirect,Link, NavLink} from "react-router-dom";
 import {texts} from "../texts/Texts";
-import {Avatar, Alert, idGenerator, MinLoder,ShareLink,formatDate, Toast, formatNum,useFileName} from "../Utils";
+import {Avatar, Alert, idGenerator, MinLoder,ShareLink,formatDate,getCurrentTime, Toast, formatNum,useFileName} from "../Utils";
 import {currentUser,useAuth,dbUsers,signOut,dbImages} from '../auth/FirebaseConfig';
 import Notifications from "../modals/Notifications";
 import {ImageCropper} from "../modals/ImageTools";
@@ -13,7 +13,6 @@ const Layout = ({props, mode, onChanges}) =>{
   const isAuth = useAuth();
   const isMounted = useRef(true);
   const datas = currentUser(true);
- // const [datas,setDatas]=useState(null);
   const [states, setStates]=useState({
     openAside:false,openProfile:false, searchs:null,
     openNotifications:false, notifications:null,loading:false,
@@ -22,7 +21,21 @@ const Layout = ({props, mode, onChanges}) =>{
   const [fileName, setFileName,clearFileName] = useFileName(null);
 
   
-  
+useEffect(() => {
+  if (isAuth) {
+    dbUsers.child(isAuth.uid).child("online").set("online").catch((error) => { console.log(error) });
+  }// Atualiza o status para 'online' quando o usuário está autenticado
+  return () => {
+    const updateOffline = async () => {
+      try {
+        const lastSeen = getCurrentTime().fullDate;
+        await dbUsers.child(isAuth.uid).child("online").set(lastSeen);
+      } catch (error) {console.log(error);}
+    };
+    if(isAuth && isAuth.uid !== null){updateOffline();}
+  }
+}, [isAuth]); 
+
   const menuList = {
     languages: [
       { label:{"pt-PT":"Português","en-US":"Portuguese"}, value: "pt-PT" },
@@ -74,14 +87,21 @@ const Layout = ({props, mode, onChanges}) =>{
   }
   
   const [alertDatas, setAlertDatas] = useState(null);
-  async function handleAction(){
+  function handleAction(){
+    const lastSeen = getCurrentTime().fullDate;
+    if(isAuth){
+      dbUsers.child(isAuth.uid).child("online").set(lastSeen).then(()=>{
+        handleSignOut();
+      }).catch(()=>{console.log(error);});
+    }else{handleSignOut();}
+  }
+  
+  const handleSignOut = async function(){
     try{
       await signOut();
       localStorage.setItem("isAuthenticated", "");
       navigate("/login", {replace:true});
-    }catch(error){
-      console.log(error);
-    }
+    }catch(error){console.log(error);}
   }
   
   const handleLogOut =(e,n)=>{
@@ -320,7 +340,7 @@ const Aside = ({language, mode, logOut})=>{
         <NavLink className={({isActive})=> isActive ? "a  a_active":"a"} to="/admin/users">
           <div className="a_aside_items">
             <div className="flex_b_c a_btn">
-              <div className="flex_c_c"><i className="bi bi-people"> </i><p>{texts.users[language]}</p></div><i className="bi bi-chevron-right"></i>
+              <div className="flex_c_c"><i className="bi bi-people"> </i><p>{texts.users[language]}</p></div>
             </div>
           </div> 
         </NavLink>
