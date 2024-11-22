@@ -199,8 +199,7 @@ button,
 .input_wrap,.input_wrap_textarea,
 .min_input_amount,
 .empty_card, .loader_card,
-.a_action_li,.transactions_wrap,.selection,
-.paymentmethodCard
+.a_action_li,.transactions_wrap,.selection
 {
   border-radius: 6px;
   -moz-border-radius: 6px;
@@ -1440,6 +1439,7 @@ input[type="checkbox"], input[type="radio"]{
   width: 50px;
   min-width: 50px;
   font-weight: 600;
+  position: relative;
 }
 .dropdownIcon{
   transition:0.3s all;
@@ -1674,7 +1674,8 @@ textarea.valid ~ label {
   text-align: center;
 }
 .card_thanks h1{
-  padding: 20px 10px 0;
+  padding: 20px 10px 20px;
+  line-height: 1.2;
 }
 .card_thanks .success h1{
   color: var(--main-color);
@@ -1685,6 +1686,7 @@ textarea.valid ~ label {
 }
 .icon{
   width: 70px;
+  position: relative;
   height: 70px;
 }
 .success .icon{
@@ -1928,7 +1930,7 @@ textarea.valid ~ label {
 .selection_card label div{
   padding: 4px 10px;
 }
-.selection_card:before, .paymentmethodCard:before{
+.selection_card:before{
   content:"";
   background: #fff;
   height:10px;
@@ -1962,44 +1964,11 @@ textarea.valid ~ label {
 }
 
 
-.dark .selection_card:before, .dark .paymentmethodCard:before{
+.dark .selection_card:before{
   background: #293042;
 }
-.paymentmethodList{
-  position: relative;
-}
-.input_left_box{
-  position: relative;
-}
-.paymentmethodCard{
-  position: absolute;
-  width:max-content;
-  right: -18px;
-  z-index: 2;
-  border: 1px solid  var(--border);
-  top: 31px;
-}
 
-.p_body{
-  top: 10px;
-  max-height:calc( 100px - 10px);
-  overflow: hidden;
-  overflow-y: scroll;
-  padding: 8px 0;
-  user-select:none;
-  -webkit-user-select:none;
-}
-.p_body .list{
-  padding: 4px 20px;
-  position: relative;
-  z-index: 10;
-  font-size: 0.8em;
-  font-weight: 400!important;
-}
-.p_body .list:hover{
-  background:var(--main-color);
-  color: #fff;
-}
+
 
 @media screen and (min-width:500px){
   .a_selection{
@@ -2070,6 +2039,7 @@ textarea.valid ~ label {
 }
 .transaction_owner_details{
   padding: 10px 20px;
+  width: 100%;
 }
 .transaction_owner_avatar{
   min-width:35px;
