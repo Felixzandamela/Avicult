@@ -43,9 +43,9 @@ export const idGenerator = (length)=>{
   for(var i=0; i < size; i++) {id += characters[Math.floor(Math.random()*characters.length)];}
   return id;
 }
-export function formatNum (number, num){
-  if(number){num =  number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");}
-  return num ? num : 0;
+export function formatNum (number, float){
+  let num = float ? parseFloat(number || 0).toFixed(2) : number || 0;
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 export function formatNumber (number){
   const unitsNames = ['',' Mil',' M',' B',' T',' Q',' Q',' S',' S',' O',' N',' D']; 
